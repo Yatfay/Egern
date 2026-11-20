@@ -1,0 +1,26 @@
+---
+title: 抓包教程
+source: https://egernapp.com/zh-CN/docs/example/http-traffic-sniffer
+language: zh-CN
+fetched: 2026-11-20
+---
+
+> 配置证书与 HTTPS 中间人抓包的分步教程。
+
+> Source: https://egernapp.com/zh-CN/docs/example/http-traffic-sniffer
+
+# Egern 作为 HTTP 流量抓取工具
+
+Egern 可用于捕获和分析网络传输中 HTTP 请求和响应数据的工具，能够帮助诊断网络应用问题、监控数据传输，以及进行网络安全分析。
+
+## 配置根证书
+
+点击 `工具` -> `证书` -> `生成新证书` -> `安装新证书`
+
+## 开启全局 MITM
+
+点击 `全部连接` -> `...` -> `开启全局 MITM`
+
+## 开启 HTTP 全局抓包
+
+点击 `全部连接` -> `...` -> `开启 HTTP 全局抓包`

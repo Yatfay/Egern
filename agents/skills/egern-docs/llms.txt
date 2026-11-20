@@ -1,0 +1,76 @@
+# Egern
+
+> Egern is an iOS, iPadOS and macOS network tool for proxying, intercepting and
+> modifying traffic. This repository is a machine-readable snapshot of the official
+> documentation at https://egernapp.com/docs, published as Markdown for LLM and
+> agent consumption.
+
+Official documentation: https://egernapp.com/docs
+Chinese documentation: https://egernapp.com/zh-CN/docs
+App Store: https://apps.apple.com/app/id1616105820
+
+Every page is a Markdown file under `skills/egern-docs/docs/en/` and `skills/egern-docs/docs/zh-CN/`.
+`llms-full.txt` contains all English pages concatenated in this order.
+
+## Getting started
+
+- [Introduction](skills/egern-docs/docs/en/intro.md): What Egern is: traffic logging, rule types, policy groups, supported protocols, scripting.
+- [FAQ](skills/egern-docs/docs/en/faq.md): Frequently asked questions about Egern behaviour and configuration.
+- [URL Scheme](skills/egern-docs/docs/en/url-scheme.md): egern:// URL schemes for automation and shortcuts.
+
+## Configuration
+
+- [Full configuration example](skills/egern-docs/docs/en/configuration-example.md): A complete Profile.yaml with every global field annotated.
+- [Proxies](skills/egern-docs/docs/en/configuration-proxies.md): Proxy definitions and protocols: HTTP, SOCKS5, Shadowsocks, Trojan, Hysteria2, VLESS, VMess.
+- [Policy groups](skills/egern-docs/docs/en/configuration-policy_groups.md): Policy groups, group types, filters, flattening and subscriptions.
+- [Rules](skills/egern-docs/docs/en/configuration-rules.md): Routing rule syntax and rule sets, including remote rule set references.
+- [DNS](skills/egern-docs/docs/en/configuration-dns.md): Bootstrap, upstreams, forward rules, proxy DNS, block IPs, DoH/DoT/DoQ/DoH3.
+
+## Scripting
+
+- [JavaScript API](skills/egern-docs/docs/en/javascript-api.md): The script runtime API: ctx objects, HTTP helpers, persistence, notifications, SSH.
+- [Scriptings](skills/egern-docs/docs/en/configuration-scriptings.md): Script configuration: http_request, http_response, schedule, generic and network scripts.
+- [Environment variables](skills/egern-docs/docs/en/configuration-env.md): Environment variables exposed to scripts and modules.
+- [Widgets](skills/egern-docs/docs/en/configuration-widgets.md): Widget DSL for home screen widgets and script-driven panels.
+
+## Traffic rewriting
+
+- [URL rewrites](skills/egern-docs/docs/en/configuration-url_rewrites.md): URL rewrite rules for MITM traffic.
+- [Header rewrites](skills/egern-docs/docs/en/configuration-header_rewrites.md): Request and response header rewriting.
+- [Body rewrites](skills/egern-docs/docs/en/configuration-body_rewrites.md): Request and response body rewriting, including JQ expressions.
+- [HTTP captures](skills/egern-docs/docs/en/configuration-http_captures.md): Capturing and exporting HTTP traffic.
+- [Modules](skills/egern-docs/docs/en/configuration-modules.md): Modules, remote module references and argument substitution.
+
+## Tutorials
+
+- [Proxy tutorial](skills/egern-docs/docs/en/example-proxy.md): Step-by-step setup of a proxy configuration.
+- [HTTP sniffer tutorial](skills/egern-docs/docs/en/example-http-traffic-sniffer.md): Step-by-step HTTPS interception setup with certificates.
+
+## 中文文档
+
+Chinese mirror of every page above, same slugs under `skills/egern-docs/docs/zh-CN/`.
+
+- [产品介绍](skills/egern-docs/docs/zh-CN/intro.md)
+- [常见问题](skills/egern-docs/docs/zh-CN/faq.md)
+- [URL Scheme](skills/egern-docs/docs/zh-CN/url-scheme.md)
+- [完整配置示例](skills/egern-docs/docs/zh-CN/configuration-example.md)
+- [代理节点](skills/egern-docs/docs/zh-CN/configuration-proxies.md)
+- [策略组](skills/egern-docs/docs/zh-CN/configuration-policy_groups.md)
+- [分流规则](skills/egern-docs/docs/zh-CN/configuration-rules.md)
+- [DNS](skills/egern-docs/docs/zh-CN/configuration-dns.md)
+- [JavaScript API](skills/egern-docs/docs/zh-CN/javascript-api.md)
+- [脚本](skills/egern-docs/docs/zh-CN/configuration-scriptings.md)
+- [环境变量](skills/egern-docs/docs/zh-CN/configuration-env.md)
+- [小组件](skills/egern-docs/docs/zh-CN/configuration-widgets.md)
+- [URL 重写](skills/egern-docs/docs/zh-CN/configuration-url_rewrites.md)
+- [HTTP 头重写](skills/egern-docs/docs/zh-CN/configuration-header_rewrites.md)
+- [HTTP 正文重写](skills/egern-docs/docs/zh-CN/configuration-body_rewrites.md)
+- [HTTP 抓包](skills/egern-docs/docs/zh-CN/configuration-http_captures.md)
+- [模块](skills/egern-docs/docs/zh-CN/configuration-modules.md)
+- [代理教程](skills/egern-docs/docs/zh-CN/example-proxy.md)
+- [抓包教程](skills/egern-docs/docs/zh-CN/example-http-traffic-sniffer.md)
+
+## Optional
+
+- [llms-full.txt](llms-full.txt): every English page in one file, for context windows that can hold the whole documentation.
+- [skills/egern-docs/SKILL.md](skills/egern-docs/SKILL.md): agent skill definition that routes questions to the right page.

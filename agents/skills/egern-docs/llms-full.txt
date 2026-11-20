@@ -1,0 +1,4129 @@
+# Egern — complete documentation
+
+> Snapshot of the official Egern documentation (https://egernapp.com/docs),
+> concatenated for LLM consumption. English pages, in reading order.
+
+
+<!-- page: intro -->
+
+# Introduction
+
+> What Egern is: traffic logging, rule types, policy groups, supported protocols, scripting.
+
+> Source: https://egernapp.com/docs/intro
+
+# Introduction
+
+Egern is a feature-rich and powerful network tool designed for proxying, intercepting, and modifying network traffic.
+
+Key features include:
+
+- Detailed logging of TCP, UDP, DNS, and HTTP network traffic.
+- Support for a wide range of rule types: domain name, domain keyword, domain suffix, domain regex, geo-location, IPv4/IPv6 CIDR, URL regex, rule sets, and default rules.
+- Flexible policy group options: selection, auto-testing, fallback, load balancing, and external policies.
+- Support for various proxy protocols: HTTP, SOCKS5, Shadowsocks, Trojan, Hysteria2, Vless, and Vmess.
+- URL rewriting functionality, giving you greater freedom to customize network requests.
+- Highly customizable request and response header rewriting capabilities.
+- Flexible request and response content rewriting options.
+- Customize request and response data manipulation with JavaScript scripting.
+- Support for local HTTP proxy servers and local SOCKS5 proxy servers, catering to various network needs.
+- DNS forwarding rules can proxy traffic to servers that support DoH, DoT, and DoQ protocols.
+- Sync configuration across devices via iCloud, ensuring your network settings stay consistent wherever you are.
+
+Egern is your essential network management tool, helping you efficiently control and debug various network environments. Whether you’re a network security expert, a developer, or a user interested in network management, Egern will become an indispensable tool for you. Come experience the powerful features of Egern and create your own custom network environment!
+
+[Module Conversion](https://gen.egernapp.com/)
+
+[App Store](https://apps.apple.com/us/app/egern/id1616105820)
+
+<!-- page: faq -->
+
+# FAQ
+
+> Frequently asked questions about Egern behaviour and configuration.
+
+> Source: https://egernapp.com/docs/faq
+
+# Frequently Asked Questions
+
+## The Relationship Between Rules, Proxies, and Policy Groups in Egern
+
+### 1. Rules Determine Policies
+
+- **Rules** are conditions used to match network requests. When a network request is made, Egern will match them sequentially according to the rules.
+- Each rule specifies a **policy**, which can be a **proxy name**, **policy group name**, or `DIRECT` and `REJECT`.
+
+### 2. Policies
+
+- A **policy** can be a single **proxy** or a **policy group**.
+- Once a rule is matched, if the policy is a proxy name, the traffic will be forwarded through the specified proxy server.
+- If the policy is a policy group name, Egern will select an appropriate proxy server based on the type and configuration of the policy group.
+
+### 3. Sub-policies of Policy Groups
+
+- A **policy group** can contain multiple **proxies** or **other policy groups**, forming a hierarchical structure.
+- For example, the policy group `Manual Selection` may include `VmessProxy` and `ShadowsocksProxy`, allowing users to manually choose which proxy to use.
+- In nested policy groups, the policy matched by a rule may need to go through several layers of policy groups before determining the final proxy server.
+
+### 4. Traffic Handling Process
+
+1. **Request Initiation**: A user's network request needs to be processed.
+2. **Rule Matching**: Egern matches the configured rules from top to bottom and finds the first rule that meets the condition.
+3. **Policy Determination**: Based on the `policy` of the matched rule, the appropriate policy is determined.
+4. **Policy Parsing**:
+  - If the policy is `DIRECT`, the connection is made directly without using a proxy.
+  - If the policy is `REJECT`, the connection is blocked.
+  - If the policy is a proxy name, that proxy server is used.
+  - If the policy is a policy group, the appropriate proxy server is selected according to the policy group's type and configuration.
+5. **Request Forwarding**: The network request is processed and forwarded through the determined proxy server.
+
+## How to Add a Rule Set
+
+Egern currently supports Surge rule sets. Go to Tools -> Rules -> + -> Select the rule-set type, then add the Surge rule set URL.
+
+## How to Add a Module
+
+Egern currently supports Surge modules. You can add a Surge module URL under Tools -> Modules.
+
+<!-- page: javascript-api -->
+
+# JavaScript API
+
+> The script runtime API: ctx objects, HTTP helpers, persistence, notifications, SSH.
+
+> Source: https://egernapp.com/docs/javascript-api
+
+# JavaScript API Reference
+
+Egern scripts use `export default` to export an async function. The `ctx` object is injected at runtime.
+
+```javascript
+export default async function(ctx) {
+  //...
+}
+```
+
+Five script types are supported: **Request**, **Response**, **Schedule**, **Generic**, and **Network**.
+
+---
+
+## ctx
+
+### ctx.script
+
+Script information.
+
+| Property | Type | Description |
+| --- | --- | --- |
+| ctx.script.name | string | Script name |
+
+### ctx.env
+
+`Object<string, string>` — Environment variable key-value pairs. See [Environment Variables](https://egernapp.com/docs/configuration/env) for details.
+
+```javascript
+export default async function(ctx) {
+  const apiKey = ctx.env.API_KEY;
+  const apiUrl = ctx.env.API_URL;
+}
+```
+
+### ctx.app
+
+Application information.
+
+| Property | Type | Description |
+| --- | --- | --- |
+| ctx.app.version | string | App version |
+| ctx.app.language | string | System language |
+
+### ctx.device
+
+Device network environment information.
+
+| Property | Type | Description |
+| --- | --- | --- |
+| ctx.device.cellular.carrier | string \| null | Cellular carrier |
+| ctx.device.cellular.radio | string \| null | Cellular radio technology |
+| ctx.device.wifi.ssid | string \| null | Wi-Fi name |
+| ctx.device.wifi.bssid | string \| null | Wi-Fi BSSID |
+| ctx.device.ipv4.address | string \| null | IPv4 address |
+| ctx.device.ipv4.gateway | string \| null | IPv4 gateway |
+| ctx.device.ipv4.interface | string \| null | Network interface |
+| ctx.device.ipv6.address | string \| null | IPv6 address |
+| ctx.device.ipv6.interface | string \| null | Network interface |
+| ctx.device.dnsServers | string[] | DNS server list |
+
+### ctx.cron
+
+`string | undefined` — Only available in schedule scripts. The cron expression.
+
+### ctx.widgetFamily
+
+`string | undefined` — Only available in generic scripts. The widget size family.
+
+Possible values: `systemSmall`, `systemMedium`, `systemLarge`, `systemExtraLarge`, `accessoryCircular`, `accessoryRectangular`, `accessoryInline`.
+
+### ctx.request
+
+`Object | undefined` — Only available in request/response scripts.
+
+| Property/Method | Type | Description |
+| --- | --- | --- |
+| method | string | HTTP method |
+| url | string | Request URL |
+| headers | Headers | Request headers |
+| body | ReadableStream \| null | Request body stream |
+| json() | Promise<any> | Parse as JSON |
+| text() | Promise<string> | Parse as text |
+| arrayBuffer() | Promise<ArrayBuffer> | Parse as ArrayBuffer |
+| blob() | Promise<Blob> | Parse as Blob |
+| formData() | Promise<FormData> | Parse as FormData |
+
+> Note: The body can only be consumed once (consistent with Fetch API behavior).
+
+### ctx.response
+
+`Object | undefined` — Only available in response scripts.
+
+| Property/Method | Type | Description |
+| --- | --- | --- |
+| status | number | Status code |
+| headers | Headers | Response headers |
+| body | ReadableStream \| null | Response body stream |
+| json() | Promise<any> | Parse as JSON |
+| text() | Promise<string> | Parse as text |
+| arrayBuffer() | Promise<ArrayBuffer> | Parse as ArrayBuffer |
+| blob() | Promise<Blob> | Parse as Blob |
+| formData() | Promise<FormData> | Parse as FormData |
+
+> Note: The body can only be consumed once (consistent with Fetch API behavior).
+
+### Headers Object
+
+`ctx.request.headers`, `ctx.response.headers`, and `ctx.http` response `headers` are all Headers objects. They support **case-insensitive** property access and the following methods:
+
+| Method | Return | Description |
+| --- | --- | --- |
+| headers.get(name) | string \| null | Get value (multiple values joined with,) |
+| headers.getAll(name) | string[] | Get all values (always returns array) |
+| headers.has(name) | boolean | Check existence |
+| headers.set(name, value) | void | Set (replaces existing) |
+| headers.append(name, value) | void | Append value |
+| headers.delete(name) | void | Delete |
+
+All method `name` parameters are case-insensitive. Direct property access is also case-insensitive, returning `string` for single values and `string[]` for multiple values:
+
+```javascript
+// These are equivalent
+headers['Content-Type']   // 'application/json'
+headers['content-type']   // 'application/json'
+
+// Multi-value header
+headers['set-cookie']                // ['session=abc', 'token=xyz']
+headers.get('set-cookie')            // 'session=abc, token=xyz'
+headers.getAll('set-cookie')         // ['session=abc', 'token=xyz']
+
+// Modification
+headers.set('X-Custom', 'value');
+headers.append('X-Custom', 'value2');
+headers.delete('X-Custom');
+headers['X-New'] = 'value';
+delete headers['X-New'];
+```
+
+---
+
+## ctx.http
+
+Send HTTP requests. All methods return `Promise<Response>`.
+
+### Methods
+
+```text
+ctx.http.get(url, options?)
+ctx.http.post(url, options?)
+ctx.http.put(url, options?)
+ctx.http.delete(url, options?)
+ctx.http.head(url, options?)
+ctx.http.options(url, options?)
+ctx.http.patch(url, options?)
+```
+
+### Parameters
+
+- `url` — `string`, the request URL.
+- `options` — Optional object:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| headers | Headers \| Object<string, string \| string[]> | Request headers (multi-value headers as arrays) |
+| body | string \| Uint8Array \| Object \| ReadableStream | Request body (Object is auto-serialized to JSON) |
+| timeout | number | Timeout in milliseconds |
+| policy | string | Proxy policy |
+| policyDescriptor | string | Policy descriptor |
+| redirect | 'follow' \| 'manual' \| 'error' | Redirect policy (default 'follow'); manual returns 3xx response, error throws on redirect |
+| credentials | 'omit' \| 'include' | Whether to include cookies (default 'include') |
+| insecureTls | boolean | Allow insecure TLS (default false) |
+
+### Response Object
+
+| Property/Method | Type | Description |
+| --- | --- | --- |
+| status | number | Status code |
+| headers | Headers | Response headers |
+| body | ReadableStream | Response body stream |
+| json() | Promise<any> | Parse as JSON |
+| text() | Promise<string> | Parse as text |
+| blob() | Promise<Blob> | Parse as Blob |
+| arrayBuffer() | Promise<ArrayBuffer> | Parse as ArrayBuffer |
+| formData() | Promise<FormData> | Parse as FormData |
+
+> Note: The `body` can only be consumed once (consistent with Fetch API behavior).
+
+### Example
+
+```javascript
+const resp = await ctx.http.get('https://api.example.com/data');
+const data = await resp.json();
+```
+
+---
+
+## ctx.storage
+
+Persistent key-value storage.
+
+| Method | Return | Description |
+| --- | --- | --- |
+| ctx.storage.get(key) | string \| null | Read value |
+| ctx.storage.set(key, value) | void | Write value (value is string) |
+| ctx.storage.getJSON(key) | any \| null | Read and JSON parse |
+| ctx.storage.setJSON(key, value) | void | JSON serialize and write |
+| ctx.storage.delete(key) | void | Delete key |
+
+### Example
+
+```javascript
+ctx.storage.set('token', 'abc123');
+const token = ctx.storage.get('token');  // 'abc123'
+ctx.storage.delete('token');
+
+// JSON convenience methods
+ctx.storage.setJSON('config', { theme: 'dark', lang: 'zh' });
+const config = ctx.storage.getJSON('config');  // { theme: 'dark', lang: 'zh' }
+```
+
+---
+
+## ctx.notify(options)
+
+Send a notification.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| title | string | Title |
+| subtitle | string | Subtitle (optional) |
+| body | string | Content (optional) |
+| sound | boolean | Play alert sound (default true) |
+| duration | number | Display duration in seconds (optional) |
+| attachment | Object | Notification attachment (optional) |
+| attachment.url | string | Media URL, auto-downloaded as attachment (mutually exclusive with base64) |
+| attachment.base64 | string | Base64-encoded media data (mutually exclusive with url) |
+| attachment.mimeType | string | MIME type (optional, gif/png/jpg/pdf auto-detected) |
+| action | Object | Tap action (optional) |
+| action.type | string | "openUrl" or "clipboard" |
+| action.url | string | URL to open when type is "openUrl" |
+| action.text | string | Text to copy when type is "clipboard" |
+
+### Example
+
+```javascript
+// Basic notification
+ctx.notify({ title: 'Done', body: 'Task completed' });
+
+// With attachment and tap action
+ctx.notify({
+  title: 'Screenshot saved',
+  body: 'Tap for details',
+  sound: true,
+  duration: 5,
+  attachment: {
+    url: 'https://example.com/image.png',
+    mimeType: 'image/png',
+  },
+  action: {
+    type: 'openUrl',
+    url: 'https://example.com/details',
+  },
+});
+
+// Base64 attachment + copy to clipboard
+ctx.notify({
+  title: 'Verification code',
+  body: '1234',
+  attachment: {
+    base64: 'iVBORw0KGgo...',
+    mimeType: 'image/png',
+  },
+  action: {
+    type: 'clipboard',
+    text: '1234',
+  },
+});
+```
+
+---
+
+## ctx.lookupIP(ip)
+
+Look up IP address information.
+
+- `ip` — `string`, the IP address.
+- Returns `Object | null`:
+
+| Property | Type | Description |
+| --- | --- | --- |
+| country | string | Country/region code |
+| asn | number | AS number |
+| organization | string | Organization name |
+
+### Example
+
+```javascript
+const info = ctx.lookupIP('8.8.8.8');
+// { country: 'US', asn: 15169, organization: 'GOOGLE' }
+```
+
+---
+
+## ctx.compress
+
+Compression/decompression. Input and output are `Uint8Array`. All methods return `Promise<Uint8Array | null>`.
+
+| Method | Description |
+| --- | --- |
+| ctx.compress.gzip(data) | Gzip compress |
+| ctx.compress.gunzip(data) | Gzip decompress |
+| ctx.compress.deflate(data) | Deflate compress |
+| ctx.compress.inflate(data) | Deflate decompress |
+| ctx.compress.brotli(data) | Brotli compress |
+| ctx.compress.unbrotli(data) | Brotli decompress |
+
+---
+
+## ctx.ssh
+
+SSH client with remote command execution and SFTP file operations.
+
+### ctx.ssh.connect(config)
+
+Connect to an SSH server. Returns `Promise<Session>`.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| host | string | Server address |
+| port | number | Port (default 22) |
+| username | string | Username |
+| password | string | Password (mutually exclusive with privateKey) |
+| privateKey | string | Private key content (mutually exclusive with password) |
+| passphrase | string | Private key passphrase (optional) |
+| timeout | number | Connection timeout in milliseconds (default 10000) |
+
+### Session
+
+#### session.exec(command, options?)
+
+Execute a remote command. Returns `Promise<ExecResult>`.
+
+**options:**
+
+| Field | Type | Description |
+| --- | --- | --- |
+| stdin | string | Standard input (optional) |
+| encoding | 'binary' | When set to 'binary', stdout/stderr return Uint8Array (optional) |
+| env | Object<string, string> | Environment variables (optional, requires server AcceptEnv configuration) |
+
+**ExecResult:**
+
+| Property | Type | Description |
+| --- | --- | --- |
+| code | number | Exit code |
+| stdout | string \| Uint8Array | Standard output |
+| stderr | string \| Uint8Array | Standard error |
+
+#### session.sftp()
+
+Initialize the SFTP subsystem. Returns `Promise<Sftp>`. Only needs to be called once per Session.
+
+#### session.close()
+
+Disconnect the SSH connection. Returns `Promise<void>`.
+
+### Sftp
+
+SFTP file operations. API style aligned with Node.js `fs/promises`.
+
+#### File Read/Write
+
+| Method | Return | Description |
+| --- | --- | --- |
+| sftp.readFile(path, encoding?) | Promise<string \| Uint8Array> | Read file; returns string when encoding is 'utf8', otherwise Uint8Array |
+| sftp.writeFile(path, data, options?) | Promise<void> | Write file (overwrite); data can be string, Uint8Array, or Object (auto JSON serialized) |
+| sftp.appendFile(path, data, options?) | Promise<void> | Append to file; same data types as above |
+
+The `encoding` parameter for `readFile` can be the string `'utf8'` or an object `{ encoding: 'utf8' }`.
+
+`writeFile`/`appendFile` `options`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| mode | number | File permissions (default 0o644) |
+
+#### Directory Operations
+
+| Method | Return | Description |
+| --- | --- | --- |
+| sftp.readdir(path) | Promise<DirEntry[]> | List directory contents |
+| sftp.mkdir(path, options?) | Promise<void> | Create directory |
+| sftp.rm(path, options?) | Promise<void> | Remove file or directory |
+
+`mkdir` `options`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| mode | number | Directory permissions (default 0o755) |
+| recursive | boolean | Recursively create parent directories (default false) |
+
+`rm` `options`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| recursive | boolean | Recursively remove directory and contents (default false) |
+| force | boolean | Ignore nonexistent paths (default false) |
+
+#### File Information
+
+| Method | Return | Description |
+| --- | --- | --- |
+| sftp.stat(path) | Promise<FileAttr> | Get file attributes (follows symlinks) |
+| sftp.lstat(path) | Promise<FileAttr> | Get file attributes (does not follow symlinks) |
+| sftp.exists(path) | Promise<boolean> | Check if path exists |
+| sftp.statfs(path) | Promise<StatFs> | Get filesystem information |
+
+**FileAttr:**
+
+| Property | Type | Description |
+| --- | --- | --- |
+| size | number | File size in bytes |
+| uid | number | Owner UID |
+| gid | number | Owner GID |
+| mode | number | Permission bits |
+| atime | Date | Last access time |
+| mtime | Date | Last modification time |
+| isFile() | boolean | Whether it is a regular file |
+| isDirectory() | boolean | Whether it is a directory |
+| isSymbolicLink() | boolean | Whether it is a symbolic link |
+
+**DirEntry** inherits all FileAttr properties, plus:
+
+| Property | Type | Description |
+| --- | --- | --- |
+| name | string | File name |
+
+**StatFs:**
+
+| Property | Type | Description |
+| --- | --- | --- |
+| bsize | number | Block size |
+| frsize | number | Fragment size |
+| blocks | number | Total blocks |
+| bfree | number | Free blocks |
+| bavail | number | Free blocks for unprivileged users |
+| files | number | Total inodes |
+| ffree | number | Free inodes |
+| favail | number | Free inodes for unprivileged users |
+| fsid | number | Filesystem ID |
+| flag | number | Mount flags |
+| namemax | number | Maximum filename length |
+
+#### Permissions and Ownership
+
+| Method | Return | Description |
+| --- | --- | --- |
+| sftp.chmod(path, mode) | Promise<void> | Change permissions (mode is octal, e.g. 0o755) |
+| sftp.chown(path, uid, gid) | Promise<void> | Change owner |
+
+#### Links and Paths
+
+| Method | Return | Description |
+| --- | --- | --- |
+| sftp.rename(oldPath, newPath) | Promise<void> | Rename/move |
+| sftp.symlink(target, path) | Promise<void> | Create symbolic link |
+| sftp.readlink(path) | Promise<string> | Read symbolic link target |
+| sftp.realpath(path) | Promise<string> | Resolve to absolute path |
+
+### Examples
+
+```javascript
+// Execute remote command
+const session = await ctx.ssh.connect({
+  host: '192.168.1.100',
+  username: 'root',
+  privateKey: ctx.env.sshKey,
+});
+const result = await session.exec('uname -a');
+ctx.notify({ title: 'Server', body: result.stdout.trim() });
+await session.close();
+```
+
+```javascript
+// SFTP file operations
+const session = await ctx.ssh.connect({
+  host: '192.168.1.100',
+  username: 'deploy',
+  password: ctx.env.sshPassword,
+});
+const sftp = await session.sftp();
+
+// Upload config
+await sftp.writeFile('/etc/app/config.json', { port: 8080, debug: false });
+
+// Read log
+const log = await sftp.readFile('/var/log/app.log', 'utf8');
+
+// Backup directory
+const files = await sftp.readdir('/etc/app');
+for (const f of files) {
+  if (f.isFile()) {
+    const data = await sftp.readFile(`/etc/app/${f.name}`);
+    await sftp.writeFile(`/backup/app/${f.name}`, data);
+  }
+}
+
+await session.close();
+```
+
+---
+
+## ctx.respond(response)
+
+In request scripts, return a response directly without sending the request to the upstream server.
+
+- `response` — Object:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| status | number | Status code |
+| headers | Headers \| Object<string, string \| string[]> | Response headers (optional, multi-value as arrays) |
+| body | string \| Uint8Array \| Object \| ReadableStream | Response body (optional, Object is auto-serialized to JSON) |
+
+```javascript
+return ctx.respond({ status: 200, headers: { 'Content-Type': 'text/plain' }, body: 'blocked' });
+```
+
+---
+
+## ctx.abort()
+
+Abort the current request or response. Used in request/response scripts.
+
+```javascript
+return ctx.abort();
+```
+
+---
+
+## Return Values
+
+The function's return value determines script behavior. Different script types return different structures.
+
+### Request Script
+
+Executes before an HTTP request is sent. Can modify the request, return a response directly, or abort.
+
+Return an object to modify the request. All fields are optional; omitted fields remain unchanged.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| method | string | HTTP method |
+| url | string | Request URL |
+| headers | Headers \| Object<string, string \| string[]> | Request headers (multi-value as arrays) |
+| body | string \| Uint8Array \| Object \| ReadableStream | Request body (Object is auto-serialized to JSON) |
+
+You can also use `ctx.respond()` to return a response directly, `ctx.abort()` to abort, or return nothing to pass through.
+
+```javascript
+// Modify request
+return { url: 'https://...', headers: {... }, body: '...' };
+
+// Pass through body stream
+return { url: 'https://...', body: ctx.request.body };
+
+// Return response directly
+return ctx.respond({ status: 200, headers: {}, body: 'blocked' });
+
+// Abort request
+return ctx.abort();
+```
+
+### Response Script
+
+Executes before an HTTP response is returned to the client. Can modify the response or abort.
+
+Return an object to modify the response. All fields are optional; omitted fields remain unchanged.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| status | number | Status code |
+| headers | Headers \| Object<string, string \| string[]> | Response headers (multi-value as arrays) |
+| body | string \| Uint8Array \| Object \| ReadableStream | Response body (Object is auto-serialized to JSON) |
+
+You can also use `ctx.abort()` to abort, or return nothing to pass through.
+
+```javascript
+return { status: 200, headers: {... }, body: '...' };
+return ctx.abort();
+```
+
+### Generic Script
+
+Return a [Widget DSL](https://egernapp.com/docs/configuration/widgets#widget-dsl) JSON object. Egern renders it as an iOS widget. The root node must have `type: "widget"`.
+
+```javascript
+return {
+  type: 'widget',
+  children: [
+    { type: 'text', text: 'Status: OK', font: { size: 'headline', weight: 'semibold' }, textColor: '#FFFFFF' }
+],
+  backgroundColor: '#2D6A4F',
+  padding: 16,
+};
+```
+
+### Schedule / Network Script
+
+No return value needed.
+
+---
+
+## Full Examples
+
+### Request — URL Rewrite
+
+```javascript
+export default async function(ctx) {
+  return { url: ctx.request.url.replace('http://', 'https://') };
+}
+```
+
+### Response — Modify JSON Body
+
+```javascript
+export default async function(ctx) {
+  const data = await ctx.response.json();
+  data.ads = [];
+  return { body: data };
+}
+```
+
+### Request — Block Ads
+
+```javascript
+export default async function(ctx) {
+  if (ctx.request.url.includes('/ads')) return ctx.abort();
+}
+```
+
+### Schedule — Scheduled Task
+
+```javascript
+export default async function(ctx) {
+  const resp = await ctx.http.get('https://api.example.com/data');
+  const data = await resp.json();
+  ctx.storage.set('latest', JSON.stringify(data));
+  ctx.notify({ title: 'Updated', body: `${data.length} items` });
+}
+```
+
+### Generic — Widget
+
+```javascript
+export default async function(ctx) {
+  const resp = await ctx.http.get('https://api.example.com/status');
+  const status = await resp.text();
+  return {
+    type: 'widget',
+    children: [
+      { type: 'text', text: 'Server Status', font: { size: 'headline', weight: 'bold' }, textColor: '#FFFFFF' },
+      { type: 'text', text: status, font: { size: 'body' }, textColor: '#FFFFFFCC' },
+],
+    backgroundColor: '#1A1A2E',
+    padding: 16,
+    gap: 8,
+  };
+}
+```
+
+### Schedule — SSH Server Monitoring
+
+```javascript
+export default async function(ctx) {
+  const session = await ctx.ssh.connect({
+    host: ctx.env.host,
+    username: ctx.env.user,
+    privateKey: ctx.env.key,
+  });
+
+  const { stdout: uptime } = await session.exec('uptime -p');
+  const { stdout: disk } = await session.exec('df -h / | tail -1');
+  await session.close();
+
+  ctx.notify({
+    title: 'Server Status',
+    body: `${uptime.trim()}\nDisk: ${disk.trim()}`,
+  });
+}
+```
+
+<!-- page: url-scheme -->
+
+# URL Scheme
+
+> egern:// URL schemes for automation and shortcuts.
+
+> Source: https://egernapp.com/docs/url-scheme
+
+# URL Scheme
+
+All URL Schemes support the `x-success` parameter for callback after the operation completes. For example: `egern:/start?x-success=myapp://callback`
+
+**Start Egern VPN**
+
+`egern:/start`
+
+**Stop Egern VPN**
+
+`egern:/stop`
+
+**Add Configuration Profile**
+
+`egern:/profiles/new?name=name&url=url`
+
+Parameter Description:
+
+- `url` (required): The URL of the configuration file
+- `name` (optional): Name of the configuration
+
+**Add Proxy Server**
+
+`egern:/proxies/new`
+
+**Add Policy Group**
+
+`egern:/policy_groups/new?type=type&external_type=external_type&name=name&policy=policy&url=url`
+
+Parameter Description:
+
+- `type` (optional): Policy group type, defaults to `external`
+- `external_type` (optional): External policy group type, defaults to `auto_test`
+- `name` (optional): Name of the policy group
+- `policy` (optional): Policy
+- `url` (optional): The URL of the policy
+
+**Add Subscription**
+
+`egern:/subscriptions/new?url=url`
+
+Parameter Description:
+
+- `url` (optional): The URL of the subscription
+
+**Add Rule**
+
+`egern:/rules/new?type=domain&match=match&policy=DIRECT`
+
+Parameter Description:
+
+- `type` (optional): Type of rule (e.g., `domain` or `domain_keyword`), defaults to `rule_set`
+- `match` (optional): Matching item (e.g., a specific domain like `example.com`)
+- `policy` (optional): Policy (e.g., `DIRECT` or `PROXY`)
+
+**Add Module**
+
+`egern:/modules/new?name=name&url=url`
+
+Parameter Description:
+
+- `url` (required): The URL of the module file
+- `name` (optional): Module name
+
+**Open Connections List**
+
+`egern:/connections`
+
+**Open Connection Details**
+
+`egern:/connections/id`
+
+Parameter Description:
+
+- `id` (required): The ID of the connection
+
+<!-- page: configuration/example -->
+
+# Full configuration example
+
+> A complete Profile.yaml with every global field annotated.
+
+> Source: https://egernapp.com/docs/configuration/example
+
+# Configuration Example
+
+You can configure Egern's parameters in the `Profile.yaml` file.
+
+Here is an example of a `Profile.yaml` file:
+
+```yaml
+---
+# Content of automatic update configuration. Default value is empty
+auto_update:
+  url: http://example.com/
+  interval: 86400
+
+# Whether to enable IPv6. Default value is false
+ipv6: false
+
+# HTTP proxy port number. Default value is 3080
+http_port: 3080
+
+# SOCKS proxy port number. Default value is 3090
+socks_port: 3090
+
+# Allow external connections to access the proxy on the device through Wi-Fi. Default value is false
+allow_external_connections: false
+
+# Virtual interface only mode. Default value is false
+vif_only: false
+
+# Globally block the QUIC protocol, forcing TCP connections. Default value is false
+# Priority: proxy > policy group > global. The proxy's own block_quic takes
+# the highest priority, followed by the policy group's, then this global setting.
+# If none are set, the protocol default is used (TCP-based protocols block by default,
+# UDP-based protocols allow by default).
+block_quic: false
+
+# Close connections that are still using the old node when a policy group's
+# selected node changes (manual switch, automatic latency-test switch, failover,
+# or selection fallback after a subscription update), so traffic immediately
+# reconnects through the new node. Default value is false
+close_connections_on_policy_change: false
+
+# List of domains that bypass the tunnel proxy. Default value is an empty array
+bypass_tunnel_proxy:
+  - "*.local"
+  - "192.168.0.0/16"
+
+# List of domains that use real IP (not Fake IP). Default value is an empty array
+real_ip_domains:
+  - "*.lan"
+  - "*.push.apple.com"
+
+# Hide VPN icon. Default value is false
+hide_vpn_icon: false
+
+# List of addresses for DNS hijacking. Default value is an empty array
+hijack_dns:
+  - '*'
+
+# Specify a custom GeoIP database URL. Default value is empty
+geoip_db_url: null
+
+# Specify a custom ASN database URL. Default value is empty
+asn_db_url: null
+
+# Custom proxy latency test URL. Default value is empty
+proxy_latency_test_url: null
+
+# Custom direct latency test URL. Default value is empty
+direct_latency_test_url: null
+
+# Compatible routing mode. Default value is false
+compat_route: false
+
+# Include all network traffic. Default value is false
+include_all_networks: false
+
+# Include APNs traffic (requires include_all_networks to be enabled). Default value is false
+include_apns: false
+
+# Include cellular network service traffic (requires include_all_networks to be enabled). Default value is false
+include_cellular_services: false
+
+# Include local network traffic (requires include_all_networks to be enabled). Default value is false
+include_local_networks: false
+
+# Routes included in the virtual interface. Default value is an empty array
+vif_included_routes:
+  - 192.168.0.1/32
+
+# Routes excluded from the virtual interface. Default value is an empty array
+vif_excluded_routes:
+  - 192.168.0.1/32
+
+dns:
+  bootstrap:
+    - system  # Use the system's default DNS configuration as bootstrap
+  upstreams:
+    google:
+      - https://8.8.8.8/dns-query
+      - https://8.8.4.4/dns-query
+  forward:
+    - domain_suffix:
+        match: "cn"
+        value: bootstrap
+    - wildcard:
+        match: '*.cn'
+        value: bootstrap
+    - proxy_rule_set:
+        match: https://github.com/ACL4SSR/ACL4SSR/raw/master/Clash/ChinaDomain.list
+        value: bootstrap
+    - regex:
+        match: ^ad\..*|^ads\..*
+        value: reject
+    - wildcard:
+        match: '*'
+        value: google
+  hosts:
+    example.com: www.example.com
+    localhost: 127.0.0.1
+    "*.local": 192.168.1.1
+  block_ips:
+    - 1.2.3.4
+    - 4.3.2.1/32
+  public_ip_lookup_url: https://ifconfig.me/ip
+
+# Proxy list
+proxies:
+  # Shadowsocks protocol
+  - shadowsocks:
+      name: MyShadowsocks
+      method: chacha20-ietf-poly1305
+      password: Password
+      server: 127.0.0.1
+      port: 443
+      tfo: false
+      udp_relay: false
+      # IP version strategy when the server is a domain that needs DNS resolution.
+      # One of: dual_stack (default) / v4_only / v6_only / v4_prefer / v6_prefer
+      ip_version: dual_stack
+      obfs: http
+      obfs_host: www.bing.com
+      obfs_uri: "http://www.bing.com/"
+  # Trojan protocol
+  - trojan:
+      name: MyTrojan
+      server: 127.0.0.1
+      port: 443
+      sni: www.bing.com
+      password: Password
+      tfo: false
+      udp_relay: true
+  # Vless protocol
+  - vless:
+      name: MyVless
+      server: 127.0.0.1
+      port: 443
+      user_id: 27848739-7e62-4138-9fd3-098a63964b6b
+      tfo: false
+      udp_relay: true
+      transport:
+        wss:
+          path: "/ws"
+          sni: www.bing.com
+  # Vmess protocol
+  - vmess:
+      name: MyVmess
+      server: 127.0.0.1
+      port: 443
+      user_id: 27848739-7e62-4138-9fd3-098a63964b6b
+      security: auto
+      legacy: false
+      tfo: false
+      udp_relay: true
+      transport:
+        wss:
+          path: "/ws"
+          sni: www.bing.com
+  # Hysteria2 protocol
+  - hysteria2:
+      name: MyHysteria2
+      server: 127.0.0.1
+      port: 443
+      auth: your_password
+      sni: www.bing.com
+      obfs: salamander
+      obfs_password: cry_me_a_r1ver
+      skip_tls_verify: false
+  # TUIC protocol
+  - tuic:
+      name: MyTuic
+      server: 127.0.0.1
+      port: 443
+      uuid: 27848739-7e62-4138-9fd3-098a63964b6b
+      password: Password
+      udp_relay_mode: native
+      alpn:
+        - h3
+      sni: www.bing.com
+  # SOCKS5 protocol
+  - socks5:
+      name: MySocks
+      server: 127.0.0.1
+      port: 443
+      username: Username
+      password: Password
+      tfo: false
+      udp_relay: true
+  # HTTP protocol
+  - http:
+      name: MyHttp
+      server: 127.0.0.1
+      port: 443
+      username: Username
+      password: Password
+      tfo: false
+  # WireGuard protocol
+  - wireguard:
+      name: MyWireGuard
+      server: engage.cloudflareclient.com
+      port: 2408
+      private_key: "base64_encoded_private_key"
+      peer_public_key: "base64_encoded_public_key"
+      local_ipv4: 172.16.0.2/32
+      reserved: [1, 2, 3]
+
+# Policy group configuration list
+policy_groups:
+  # Manually selected policy group
+  - select:
+      name: Select
+      policies:
+        - MyShadowsocks
+        - MyTrojan
+      icon: globe
+  # Auto test policy group
+  - auto_test:
+      name: AutoTest
+      policies:
+        - MyShadowsocks
+        - MyTrojan
+      interval: 600
+      tolerance: 100
+      timeout: 5
+  # Fallback policy group
+  - fallback:
+      name: Fallback
+      policies:
+        - MyShadowsocks
+        - MyTrojan
+      interval: 600
+      timeout: 5
+  # Load balance policy group
+  - load_balance:
+      name: LoadBalance
+      policies:
+        - MyShadowsocks
+        - MyTrojan
+  # External resource policy group
+  - external:
+      name: MyExternal
+      type: select
+      urls:
+        - "https://example.com/proxies.yaml"
+      filter: ".*"
+      interval: 600
+      tolerance: 100
+      timeout: 5
+      update_interval: 86400
+  # Conditional policy group
+  - conditional:
+      name: NetworkSwitch
+      rules:
+        - ssid:
+            match: "Home-*"
+            policy: DIRECT
+        - cellular:
+            match: "LTE"
+            policy: AutoTest
+      default_policy: Select
+
+# Proxy rule list
+rules:
+  - domain:
+      match: example.com
+      policy: REJECT
+  - domain_keyword:
+      match: example
+      policy: DIRECT
+  - domain_suffix:
+      match: google.com
+      policy: Select
+  - domain_regex:
+      match: "^ads?\\."
+      policy: REJECT
+  - domain_wildcard:
+      match: "*.google.*"
+      policy: Select
+  - geoip:
+      match: CN
+      policy: DIRECT
+      no_resolve: true
+  - ip_cidr:
+      match: 192.168.0.0/16
+      policy: DIRECT
+  - ip_cidr6:
+      match: "2001:db8::/32"
+      policy: REJECT
+  - url_regex:
+      match: "^https://.*\\.example\\.com/"
+      policy: DIRECT
+  - asn:
+      match: "AS13335"
+      policy: Select
+  - dest_port:
+      match: "80,443"
+      policy: Select
+  - protocol:
+      match: udp
+      policy: DIRECT
+  - rule_set:
+      match: "https://example.com/rules.yaml"
+      policy: Select
+      update_interval: 86400
+  - default:
+      policy: Select
+
+# URL rewrite list
+url_rewrites:
+  - match: "(.*google)\\.cn"
+    location: $1.com
+    status_code: 307
+
+# HTTP header rewrite list
+header_rewrites:
+  - add:
+      match: "^https://example\\.com"
+      name: X-Custom-Header
+      value: custom-value
+      type: request
+  - replace:
+      match: "^https://example\\.com"
+      name: Cache-Control
+      value: no-cache
+      type: response
+  - delete:
+      match: "^https://example\\.com"
+      name: X-Tracking-Id
+      type: request
+
+# HTTP body rewrite list
+body_rewrites:
+  # Response body regex replacement
+  - response_regex:
+      match: "^https://example\\.com"
+      find: old_content
+      replace: new_content
+  # Request body jq filter
+  - request_jq:
+      match: "^https://api\\.example\\.com/submit"
+      filter: '.data.version = "2.0"'
+
+# Scripting configuration list
+scriptings:
+  - http_request:
+      name: HTTP Script 1
+      match: "^https://example\\.com"
+      script_url: "https://example.com/scripts/request.js"
+      update_interval: 86400
+      max_size: 131072
+      timeout: 30
+      body_required: false
+  - http_response:
+      name: HTTP Script 2
+      match: "^https://example\\.com"
+      script_url: "https://example.com/scripts/response.js"
+      update_interval: 86400
+      max_size: 131072
+      timeout: 30
+      body_required: false
+  - schedule:
+      name: Scheduled Script 1
+      cron: "0 8 * * *"
+      script_url: "https://example.com/scripts/task.js"
+      update_interval: 86400
+      timeout: 30
+  - generic:
+      name: Widget Script 1
+      script_url: "https://example.com/scripts/widget.js"
+      env:
+        API_KEY: "your_api_key"
+  - network:
+      name: Network Script 1
+      script_url: "https://example.com/scripts/network.js"
+
+# Map Local configuration. Maps matching URL requests to local custom responses
+map_locals:
+  - match: "^https://api\\.example\\.com/mock$"
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{"code": 0, "message": "ok"}'
+
+# MITM configuration. Man-in-the-middle decryption for modifying HTTPS traffic (URL rewrites, header/body rewrites, scripts, etc.)
+mitm:
+  ca_p12: ""
+  ca_passphrase: "123456"
+  hostnames:
+    includes:
+      - "*.example.com"
+    excludes:
+      - "*.internal.example.com"
+
+# HTTP capture configuration list
+http_captures:
+  - "*.example.com"
+
+# Widget configuration. Display custom content on Home Screen and Lock Screen, rendered by generic scripts
+widgets:
+  - name: "Widget Script 1"
+    env:
+      REGION: "cn"
+
+# Default external policy group for adding subscriptions. Default is empty
+default_subscription_group: Subscription
+
+# Policy group to automatically add proxies to. Default is empty
+default_proxy_group: PROXY
+
+# Module configuration list
+modules:
+  - name: "Ad Filtering"
+    url: "https://example.com/module.yaml"
+    update_interval: 86400
+    enabled: true
+  - url: "https://example.com/custom.yaml"
+    compat_arguments:
+      API_KEY: "your_api_key"
+```
+
+<!-- page: configuration/dns -->
+
+# DNS
+
+> Bootstrap, upstreams, forward rules, proxy DNS, block IPs, DoH/DoT/DoQ/DoH3.
+
+> Source: https://egernapp.com/docs/configuration/dns
+
+# DNS
+
+Egern's DNS subsystem supports multiple protocols (UDP, DoT, DoH, DoQ, DoH3) and lets you route different domains to different upstream DNS groups via Forward rules. Egern has two internal resolution paths:
+
+- **Default DNS**: resolves domain names for user traffic. Goes through Forward rules and falls back to Bootstrap on no-match. Connections to upstreams follow the proxy rules.
+- **Proxy DNS**: used by proxy servers to resolve destination domains. Connections to upstreams are forced to be direct, avoiding a DNS → proxy → DNS dependency loop. When `proxy_nameservers` is configured, every proxy-DNS query is forced through that list (**Forward rules are bypassed**); when unset, the proxy DNS shares the Forward rules with the default DNS and falls back to Bootstrap on no-match.
+
+## Resolution Flow
+
+Each query goes through these stages in order:
+
+1. **Hosts**: if a local mapping matches, return the IP directly, or continue resolving the mapped domain as an alias.
+2. **Forward**: rules are evaluated in order; the first matching rule selects the upstream. SSID/BSSID/Cellular rules depend on current network state, and the matching cache is cleared when the network changes. The proxy DNS skips this stage entirely when `proxy_nameservers` is configured — every query goes straight to that list.
+3. **Default upstream**: used when no Forward rule matches — the default DNS falls back to Bootstrap; the proxy DNS also falls back to Bootstrap when `proxy_nameservers` is not configured.
+4. **Block IPs**: records in the response matching `block_ips` are filtered out; if all records are filtered, the resolution is treated as failed.
+
+## Bootstrap (Startup DNS)
+
+`bootstrap` configures the DNS servers used during startup. It only supports plain UDP (port 53) and never goes through proxy rules — traffic is always direct. It serves two purposes:
+
+1. Resolve the hostnames of encrypted DNS servers in `upstreams` (`tls://`, `https://`, etc.).
+2. Act as the final DNS fallback (see "Resolution Flow" above).
+
+Supported values:
+
+- An IP or `IP:port`, e.g. `1.1.1.1`, `8.8.8.8:53`.
+- The special value `system`, which merges in system DNS servers (the ones provisioned by Wi-Fi/cellular).
+
+If unset or unparsable, Egern automatically falls back to the system DNS servers.
+
+```yaml
+dns:
+  bootstrap:
+    - system        # merge system DNS
+    - 223.5.5.5     # plus a custom server
+```
+
+## Upstreams (DNS Server Groups)
+
+Defines named groups of encrypted DNS servers, referenced by Forward rules via the group name. Servers within a group race in parallel; the fastest response wins.
+
+Supported server formats:
+
+| Format | Protocol | Default Port |
+| --- | --- | --- |
+| 1.1.1.1 or 1.1.1.1:53 | Plain UDP | 53 |
+| udp://1.1.1.1 | Plain UDP | 53 |
+| tls://1.1.1.1 | DNS over TLS | 853 |
+| https://8.8.8.8/dns-query | DNS over HTTPS | 443 |
+| quic://dns.adguard-dns.com | DNS over QUIC | 853 |
+| h3://dns.example.com/dns-query | DNS over HTTP/3 | 443 |
+| bootstrap | Expands to all Bootstrap servers | — |
+| system | Expands to all system DNS servers | — |
+
+A Forward rule's `value` may reference a group name from `upstreams`. The default DNS always honors Forward rules, so it can use any of these groups; the proxy DNS only reaches them via Forward when `proxy_nameservers` is unset (Forward is skipped once `proxy_nameservers` is configured).
+
+```yaml
+dns:
+  upstreams:
+    google:
+      - https://8.8.8.8/dns-query
+      - https://8.8.4.4/dns-query
+    adguard:
+      - quic://dns.adguard-dns.com
+```
+
+## Forward (DNS Forwarding Rules)
+
+Rules are evaluated in declaration order; the first matching rule routes the query to its upstream. The default DNS always uses these rules; the proxy DNS only goes through Forward when `proxy_nameservers` is unset (otherwise it bypasses Forward and goes straight to `proxy_nameservers`).
+
+Supported match types:
+
+| Type | Description |
+| --- | --- |
+| domain | Exact match on the full domain |
+| domain_keyword | Substring match on the domain |
+| domain_suffix | Suffix match aligned on. boundaries: match: cn matches cn and example.cn, but not examplecn |
+| domain_wildcard | Glob pattern (* /?), case-insensitive. e.g. *.google.com |
+| domain_regex | PCRE2 regex, find-style — any substring hit counts |
+| proxy_rule_set | Reference to a precompiled remote rule set |
+| ssid | Glob match against the current Wi-Fi SSID |
+| bssid | Glob match against the current Wi-Fi BSSID |
+| cellular | Glob match against the current cellular radio type, e.g. LTE, NR |
+
+Fields per rule:
+
+- **match** (string), required The match condition; semantics depend on the rule type.
+- **value** (string), required The target upstream. May be:
+  - A group name defined in `upstreams`.
+  - A single DNS server address, e.g. `tls://1.1.1.1` (an implicit upstream — equivalent to a group containing just that one address).
+  - The special value `bootstrap` — use the Bootstrap DNS.
+  - The special value `system` — use the system DNS.
+  - The special value `reject` — refuse the query and return an empty response.
+- **disabled** (bool), optional Disables this rule. Defaults to `false`.
+- **update_interval** (integer), optional Rule-set auto-update interval in seconds; only applies to `proxy_rule_set`. Defaults to `86400`. A value `<= 0` disables auto-update.
+
+## Hosts (Host Mapping)
+
+Maps a hostname (a domain or IP) by glob pattern to one or more IPs/domains. Patterns are matched in declaration order; the first match wins. When a match is found:
+
+- All values are IPs → return them directly.
+- Any value is a domain → resolve those domains as aliases (going back through Forward).
+
+```yaml
+dns:
+  hosts:
+    "*.google.com": 142.250.80.46
+    "example.com": www.example.com         # domain → another domain
+    "192.168.1.100": internal.example.com  # reverse-style IP → domain
+    "cdn.example.com":                     # multiple values
+      - 1.2.3.4
+      - 5.6.7.8
+```
+
+## Proxy Nameservers (Forced Upstream for Proxy DNS)
+
+When configured, every proxy DNS query is forced through these servers and **Forward rules are bypassed** — this keeps the "DNS used by the proxy" semantic explicit: configuring it acts as a hard override. All connections are direct (never through the proxy chain), avoiding a DNS → proxy → DNS dependency loop. Supports the same protocol formats as Upstreams.
+
+When unset, the proxy DNS shares the same Forward rules as the default DNS and falls back to Bootstrap on no-match.
+
+```yaml
+dns:
+  proxy_nameservers:
+    - tls://dns.google
+    - https://cloudflare-dns.com/dns-query
+    - quic://dns.adguard-dns.com
+```
+
+## Block IPs
+
+Filter matching IPs out of DNS responses (useful against DNS poisoning). Supports IPv4, IPv6 and CIDR:
+
+```yaml
+dns:
+  block_ips:
+    - 0.0.0.0
+    - 127.0.0.1
+    - 10.0.0.0/8
+    - "::1"
+```
+
+A resolution is treated as failed only when **all** records are filtered out; otherwise the remaining records are returned.
+
+## Skip TLS Verify
+
+Skip TLS certificate verification for encrypted DNS upstreams (`tls://`, `https://`, `quic://`, `h3://`). Only enable this when an upstream uses a self-signed certificate (e.g. a self-hosted AdGuardHome). Otherwise leave it disabled.
+
+```yaml
+dns:
+  skip_tls_verify: true
+```
+
+## Public IP Lookup URL
+
+Optional. An HTTP/HTTPS URL that returns the device's public IP as plain text. Egern fetches it periodically and includes the result as an EDNS Client Subnet (ECS) parameter on upstream queries, helping CDNs return geographically closer answers.
+
+```yaml
+dns:
+  public_ip_lookup_url: https://ifconfig.me/ip
+```
+
+## Full Example
+
+```yaml
+dns:
+  bootstrap:
+    - system
+  upstreams:
+    google:
+      - https://8.8.8.8/dns-query
+      - https://8.8.4.4/dns-query
+    adguard:
+      - quic://dns.adguard-dns.com
+  forward:
+    - domain:
+        match: "internal.example.com"
+        value: "192.168.1.1"
+    - domain_suffix:
+        match: "cn"
+        value: bootstrap
+    - domain_keyword:
+        match: "taobao"
+        value: bootstrap
+    - domain_wildcard:
+        match: "*.cn"
+        value: bootstrap
+    - proxy_rule_set:
+        match: "https://example.com/china-domains.list"
+        value: bootstrap
+        update_interval: 86400
+    - domain_regex:
+        match: "^ad\\..*|^ads\\..*"
+        value: reject
+    - ssid:
+        match: "MyHome*"
+        value: bootstrap
+    - bssid:
+        match: "AA:BB:CC:*"
+        value: bootstrap
+    - cellular:
+        match: "NR"
+        value: google
+    - domain_wildcard:
+        match: "*"
+        value: google
+  hosts:
+    example.com: www.example.com
+    localhost: 127.0.0.1
+    "*.local": 192.168.1.1
+  proxy_nameservers:
+    - tls://dns.google
+    - https://1.1.1.1/dns-query
+  block_ips:
+    - 0.0.0.0
+    - 127.0.0.1
+  skip_tls_verify: false
+  public_ip_lookup_url: https://ifconfig.me/ip
+```
+
+## FAQ
+
+**Why is Bootstrap still needed when Upstreams are configured?**
+
+Encrypted DNS entries in `upstreams` (`tls://dns.google`, `https://cloudflare-dns.com/...`) need their hostnames resolved to IPs before a connection can be established — that step uses Bootstrap. Bootstrap therefore must be plain UDP DNS reachable by IP; it cannot itself depend on the encrypted upstreams it is meant to bootstrap.
+
+**Which DNS is used when no Forward rule matches?**
+
+The default DNS falls back to Bootstrap. The proxy DNS depends on `proxy_nameservers`: when unset, it goes through Forward rules and falls back to Bootstrap on no-match; once configured, every proxy DNS query is sent straight to `proxy_nameservers` and never enters Forward matching at all.
+
+**Why must Proxy Nameservers be direct?**
+
+A proxy server (Trojan, Shadowsocks, etc.) needs the destination domain resolved to an IP before it can establish a proxy connection. If the proxy DNS itself went through the proxy, you'd have a dependency loop. Direct connections break that loop.
+
+<!-- page: configuration/proxies -->
+
+# Proxies
+
+> Proxy definitions and protocols: HTTP, SOCKS5, Shadowsocks, Trojan, Hysteria2, VLESS, VMess.
+
+> Source: https://egernapp.com/docs/configuration/proxies
+
+# Proxies
+
+Configuration for proxies, supporting the following protocols: `Shadowsocks`, `Snell`, `Trojan`, `AnyTLS`, `Hysteria2`, `TUIC`, `SOCKS5`, `SOCKS5 over TLS`, `SSH`, `HTTP`, `HTTPS`, `Vmess`, `Vless`, `WireGuard`. All optional fields of type `bool` default to `false`.
+
+## Shadowsocks
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **method** (string), Required Encryption method. AEAD-2022: `2022-blake3-aes-128-gcm`, `2022-blake3-aes-256-gcm`, `2022-blake3-chacha20-poly1305` AEAD: `chacha20-poly1305`, `aes-256-gcm`, `aes-128-gcm` Stream: `none`, `table`, `rc4`, `rc4-md5`, `aes-128-cfb`, `aes-192-cfb`, `aes-256-cfb`, `aes-128-ctr`, `aes-192-ctr`, `aes-256-ctr`, `bf-cfb`, `camellia-128-cfb`, `camellia-192-cfb`, `camellia-256-cfb`, `cast5-cfb`, `des-cfb`, `idea-cfb`, `rc2-cfb`, `seed-cfb`, `salsa20`, `chacha20`, `chacha20-ietf`
+- **password** (string), Required The password. Shadowsocks 2022 uses a Base64-encoded key.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port.
+- **udp_port** (integer), Optional Dedicated UDP port. Used when the server listens on different ports for TCP and UDP.
+- **tfo** (bool), Optional Whether to enable TCP Fast Open.
+- **udp_relay** (bool), Optional Whether to enable UDP relay.
+- **obfs** (string), Optional Obfuscation method. Possible values: `http`, `tls`.
+- **obfs_host** (string), Optional The hostname used for obfuscation.
+- **obfs_uri** (string), Optional The URI path used for obfuscation.
+- **block_quic** (bool), Optional Whether to block the QUIC protocol. When set to `true`, connections using this proxy will not use QUIC/HTTP3. This setting takes the highest priority, overriding both policy group and global `block_quic`. When not set, the policy group and global settings are used in order; if none are set, Shadowsocks defaults to `false` (allow QUIC).
+- **shadow_tls** (object), Optional ShadowTLS transport configuration. See ShadowTLS for details.
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+shadowsocks:
+  name: "my-ss"
+  method: "aes-256-gcm"
+  password: "mypassword"
+  server: "1.2.3.4"
+  port: 8388
+  tfo: true
+  udp_relay: false
+  obfs: "http"
+  obfs_host: "example.com"
+  obfs_uri: "/path"
+```
+
+## Snell
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port.
+- **psk** (string), Required The pre-shared key.
+- **version** (integer), Optional Protocol version, one of `1`/`2`/`3`/`4`/`5`. Defaults to `1`; v5 is implemented as v4.
+- **udp_relay** (bool), Optional Whether to enable UDP relay. Only available on v3/v4.
+- **reuse** (bool), Optional Whether to enable connection reuse. Only effective on v4; v2 always reuses.
+- **obfs** (string), Optional Obfuscation method. Possible values: `http`, `tls`.
+- **obfs_host** (string), Optional The hostname used for obfuscation. Defaults to `bing.com`.
+- **tfo** (bool), Optional Whether to enable TCP Fast Open.
+- **block_quic** (bool), Optional Whether to block the QUIC protocol. When set to `true`, connections using this proxy will not use QUIC/HTTP3. This setting takes the highest priority, overriding both policy group and global `block_quic`. When not set, the policy group and global settings are used in order; if none are set, Snell defaults to `false` (allow QUIC).
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+snell:
+  name: "my-snell"
+  server: "1.2.3.4"
+  port: 8388
+  psk: "mypassword"
+  version: 4
+  udp_relay: true
+  obfs: "http"
+  obfs_host: "example.com"
+```
+
+## Trojan
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port.
+- **sni** (string), Optional The Server Name Indication (SNI) used for TLS. Defaults to the value of the `server` field.
+- **password** (string), Required The password for the Trojan protocol.
+- **tfo** (bool), Optional Whether to enable TCP Fast Open.
+- **udp_relay** (bool), Optional Whether to enable UDP relay.
+- **skip_tls_verify** (bool), Optional Whether to skip TLS certificate verification.
+- **fingerprint_sha256** (string), Optional SHA-256 fingerprint of the server's leaf certificate (hex, case-insensitive; `:` or `-` separators allowed). When set, the leaf certificate's DER SHA-256 is pinned and CA-chain verification is bypassed. Mutually exclusive with `skip_tls_verify`, which is ignored when this field is set.
+- **reality** (object), Optional REALITY configuration (mutually exclusive with plain TLS). When set, REALITY replaces plain TLS as the security layer: it borrows a real site's certificate to complete the handshake and carries its own authentication, so `skip_tls_verify` and `fingerprint_sha256` are ignored.
+  - **public_key** (string), Required The server Reality public key (Base64 URL-safe encoded).
+  - **short_id** (string), Optional The short ID (hexadecimal string).
+- **websocket** (object), Optional WebSocket configuration for Trojan:
+  - **path** (string), Required The WebSocket path.
+  - **host** (string), Optional The Host header for the WebSocket.
+- **block_quic** (bool), Optional Whether to block the QUIC protocol. When set to `true`, connections using this proxy will not use QUIC/HTTP3. This setting takes the highest priority, overriding both policy group and global `block_quic`. When not set, the policy group and global settings are used in order; if none are set, Trojan defaults to `true` (block QUIC).
+- **shadow_tls** (object), Optional ShadowTLS transport configuration. See ShadowTLS for details.
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+trojan:
+  name: "my-trojan"
+  server: "trojan.example.com"
+  port: 443
+  sni: "trojan.example.com"
+  password: "trojanpass"
+  tfo: true
+  udp_relay: true
+  skip_tls_verify: true
+  websocket:
+    path: "/ws"
+    host: "trojan.example.com"
+```
+
+## AnyTLS
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port.
+- **password** (string), Required The authentication password.
+- **sni** (string), Optional The Server Name Indication (SNI) used for TLS. Defaults to the value of the `server` field.
+- **tfo** (bool), Optional Whether to enable TCP Fast Open.
+- **udp_relay** (bool), Optional Whether to enable UDP relay (UDP over TCP).
+- **skip_tls_verify** (bool), Optional Whether to skip TLS certificate verification. **Unlike other TLS protocols, AnyTLS defaults to skipping verification when this field is unset**, preserving its historical behavior (AnyTLS commonly uses a self-signed certificate, with authentication handled by the password and TLS serving only as camouflage). Set to `false` to enable standard CA-chain verification. Ignored when `fingerprint_sha256` is set.
+- **fingerprint_sha256** (string), Optional SHA-256 fingerprint of the server's leaf certificate (hex, case-insensitive; `:` or `-` separators allowed). When set, the leaf certificate's DER SHA-256 is pinned and CA-chain verification is bypassed. Mutually exclusive with `skip_tls_verify`, which is ignored when this field is set.
+- **reality** (object), Optional REALITY configuration (mutually exclusive with plain TLS). When set, REALITY replaces plain TLS as the security layer: it borrows a real site's certificate to complete the handshake and carries its own authentication, so `skip_tls_verify` and `fingerprint_sha256` are ignored.
+  - **public_key** (string), Required The server Reality public key (Base64 URL-safe encoded).
+  - **short_id** (string), Optional The short ID (hexadecimal string).
+- **block_quic** (bool), Optional Whether to block the QUIC protocol. When set to `true`, connections using this proxy will not use QUIC/HTTP3. This setting takes the highest priority, overriding both policy group and global `block_quic`. When not set, the policy group and global settings are used in order; if none are set, AnyTLS defaults to `true` (block QUIC).
+- **shadow_tls** (object), Optional ShadowTLS transport configuration. See ShadowTLS for details.
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+anytls:
+  name: "my-anytls"
+  server: "anytls.example.com"
+  port: 443
+  password: "mypassword"
+  sni: "anytls.example.com"
+  udp_relay: true
+```
+
+## Hysteria2
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port.
+- **auth** (string), Required The authentication password or token for Hysteria2.
+- **sni** (string), Optional The Server Name Indication (SNI) used for TLS.
+- **obfs** (string), Optional Obfuscation method. Possible values: `salamander`.
+- **obfs_password** (string), Optional The obfuscation password.
+- **skip_tls_verify** (bool), Optional Whether to skip TLS certificate verification.
+- **fingerprint_sha256** (string), Optional SHA-256 fingerprint of the server's leaf certificate (hex, case-insensitive; `:` or `-` separators allowed). When set, the leaf certificate's DER SHA-256 is pinned and CA-chain verification is bypassed. Mutually exclusive with `skip_tls_verify`, which is ignored when this field is set.
+- **port_hopping** (string), Optional Port hopping configuration string. Supports a single port `8080`, a port range `20000-30000`, or a mixed format `1234,5000-6000,8080`. The client will randomly select a port from the specified set for connection.
+- **port_hopping_interval** (integer), Optional Port hopping interval (in seconds). After a connection is established, the client switches to a new random port every specified number of seconds.
+- **bandwidth** (integer), Optional Upload bandwidth (Mbps). When configured, the Brutal congestion control algorithm will be enabled to send data at the target bandwidth. It is recommended to set this to 80%-90% of the actual available bandwidth.
+- **block_quic** (bool), Optional Whether to block the QUIC protocol. When set to `true`, connections using this proxy will not use QUIC/HTTP3. This setting takes the highest priority, overriding both policy group and global `block_quic`. When not set, the policy group and global settings are used in order; if none are set, Hysteria2 defaults to `false` (allow QUIC).
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+hysteria2:
+  name: "my-hysteria2"
+  server: "hysteria.example.com"
+  port: 443
+  auth: "my_auth_token"
+  sni: "hysteria.example.com"
+  obfs: "salamander"
+  obfs_password: "myobfspass"
+  skip_tls_verify: true
+  port_hopping: "20000-30000"
+  port_hopping_interval: 30
+  bandwidth: 100
+```
+
+## TUIC
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port.
+- **uuid** (string), Required The UUID.
+- **password** (string), Required The password.
+- **udp_relay_mode** (string), Optional UDP relay mode. `native` (native UDP relay, default), `quic` (transmit UDP datagrams over QUIC streams).
+- **alpn** (array of string), Optional The ALPN list for TLS. Common values: `h3`.
+- **sni** (string), Optional The Server Name Indication (SNI) used for TLS.
+- **skip_tls_verify** (bool), Optional Whether to skip TLS certificate verification.
+- **fingerprint_sha256** (string), Optional SHA-256 fingerprint of the server's leaf certificate (hex, case-insensitive; `:` or `-` separators allowed). When set, the leaf certificate's DER SHA-256 is pinned and CA-chain verification is bypassed. Mutually exclusive with `skip_tls_verify`, which is ignored when this field is set.
+- **port_hopping** (string), Optional Port hopping configuration string. Supports a single port `8080`, a port range `20000-30000`, or a mixed format `1234,5000-6000,8080`.
+- **port_hopping_interval** (integer), Optional Port hopping interval (in seconds).
+- **block_quic** (bool), Optional Whether to block the QUIC protocol. When set to `true`, connections using this proxy will not use QUIC/HTTP3. This setting takes the highest priority, overriding both policy group and global `block_quic`. When not set, the policy group and global settings are used in order; if none are set, TUIC defaults to `false` (allow QUIC).
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+tuic:
+  name: "my-tuic"
+  server: "tuic.example.com"
+  port: 443
+  uuid: "22222222-2222-2222-2222-222222222222"
+  password: "tuicpass"
+  udp_relay_mode: "native"
+  alpn:
+  - "h3"
+  sni: "tuic.example.com"
+  skip_tls_verify: true
+  port_hopping: "443,445,447"
+  port_hopping_interval: 30
+```
+
+## SOCKS5
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port.
+- **username** (string), Optional The username.
+- **password** (string), Optional The password.
+- **tfo** (bool), Optional Whether to enable TCP Fast Open.
+- **udp_relay** (bool), Optional Whether to enable UDP relay.
+- **block_quic** (bool), Optional Whether to block the QUIC protocol. When set to `true`, connections using this proxy will not use QUIC/HTTP3. This setting takes the highest priority, overriding both policy group and global `block_quic`. When not set, the policy group and global settings are used in order; if none are set, SOCKS5 defaults to `false` (allow QUIC).
+- **shadow_tls** (object), Optional ShadowTLS transport configuration. See ShadowTLS for details.
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+socks5:
+  name: "my-socks5"
+  server: "1.2.3.4"
+  port: 1080
+  username: "user"
+  password: "pass"
+  tfo: false
+  udp_relay: true
+```
+
+## SOCKS5 over TLS
+
+SOCKS5 wrapped in a TLS layer: the client first completes a TLS handshake with the server, then performs the SOCKS5 handshake and relays traffic inside the encrypted channel. This is the TLS variant of `socks5`, just as `https` is to `http`.
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port.
+- **username** (string), Optional The username.
+- **password** (string), Optional The password.
+- **sni** (string), Optional TLS SNI (Server Name Indication). Defaults to the value of the `server` field.
+- **tfo** (bool), Optional Whether to enable TCP Fast Open.
+- **udp_relay** (bool), Optional Whether to enable UDP relay.
+- **skip_tls_verify** (bool), Optional Whether to skip TLS certificate verification.
+- **fingerprint_sha256** (string), Optional SHA-256 fingerprint of the server's leaf certificate (hex, case-insensitive; `:` or `-` separators allowed). When set, the leaf certificate's DER SHA-256 is pinned and CA-chain verification is bypassed. Mutually exclusive with `skip_tls_verify`, which is ignored when this field is set.
+- **reality** (object), Optional REALITY configuration (mutually exclusive with plain TLS). When set, REALITY replaces plain TLS as the security layer: it borrows a real site's certificate to complete the handshake and carries its own authentication, so `skip_tls_verify` and `fingerprint_sha256` are ignored.
+  - **public_key** (string), Required The server Reality public key (Base64 URL-safe encoded).
+  - **short_id** (string), Optional The short ID (hexadecimal string).
+- **block_quic** (bool), Optional Whether to block the QUIC protocol. When set to `true`, connections using this proxy will not use QUIC/HTTP3. This setting takes the highest priority, overriding both policy group and global `block_quic`. When not set, the policy group and global settings are used in order; if none are set, SOCKS5 over TLS defaults to `false` (allow QUIC).
+- **shadow_tls** (object), Optional ShadowTLS transport configuration. See ShadowTLS for details.
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+socks5_tls:
+  name: "my-socks5-tls"
+  server: "1.2.3.4"
+  port: 443
+  username: "user"
+  password: "pass"
+  sni: "example.com"
+  udp_relay: true
+```
+
+## SSH
+
+Tunnels TCP connections through an SSH server's `direct-tcpip` channel (similar to `ssh -L`), multiplexing all connections over a single SSH session. SSH has no datagram channel, so UDP is not relayed.
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port (SSH default is 22).
+- **username** (string), Required The SSH login username.
+- **password** (string), Optional The login password. Provide a password and/or a private key; when both are present, the private key is tried first.
+- **private_key** (string), Optional Inline private key contents in PEM/OpenSSH format (the key itself, not a file path).
+- **host_keys** (array of string), Optional Accepted server host keys. Each entry is a full `known_hosts` public key line, i.e. `<type> <base64-key>` (e.g. `ssh-ed25519 AAAAC3Nza...`), optionally with a trailing comment. When set, the server's host key is pinned and verified, and the connection is refused on mismatch. When left empty, host key verification is skipped.
+- **tfo** (bool), Optional Whether to enable TCP Fast Open.
+- **block_quic** (bool), Optional Whether to block the QUIC protocol. When set to `true`, connections using this proxy will not use QUIC/HTTP3. This setting takes the highest priority, overriding both policy group and global `block_quic`. When not set, the policy group and global settings are used in order; if none are set, SSH defaults to `true` (block QUIC), since SSH cannot relay UDP.
+- **shadow_tls** (object), Optional ShadowTLS transport configuration. See ShadowTLS for details.
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+ssh:
+  name: "my-ssh"
+  server: "ssh.example.com"
+  port: 22
+  username: "root"
+  # Authenticate with an inline private key (PEM/OpenSSH format)...
+  private_key: |
+    -----BEGIN OPENSSH PRIVATE KEY-----
+...
+    -----END OPENSSH PRIVATE KEY-----
+  #...and/or with a password
+  password: "mypassword"
+  # Optional: pin the server's host key (a full known_hosts public key line)
+  host_keys:
+    - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
+```
+
+## HTTP
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port.
+- **username** (string), Optional The username for the HTTP proxy.
+- **password** (string), Optional The password for the HTTP proxy.
+- **headers** (object), Optional Custom HTTP request headers.
+- **tfo** (bool), Optional Whether to enable TCP Fast Open.
+- **shadow_tls** (object), Optional ShadowTLS transport configuration. See ShadowTLS for details.
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+http:
+  name: "my-http"
+  server: "5.6.7.8"
+  port: 8080
+  username: "user"
+  password: "pass"
+  tfo: false
+```
+
+## HTTPS
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port.
+- **username** (string), Optional The username for the HTTPS proxy.
+- **password** (string), Optional The password for the HTTPS proxy.
+- **headers** (object), Optional Custom HTTP request headers.
+- **sni** (string), Optional TLS SNI (Server Name Indication). Defaults to the value of the `server` field.
+- **tfo** (bool), Optional Whether to enable TCP Fast Open.
+- **skip_tls_verify** (bool), Optional Whether to skip TLS certificate verification.
+- **fingerprint_sha256** (string), Optional SHA-256 fingerprint of the server's leaf certificate (hex, case-insensitive; `:` or `-` separators allowed). When set, the leaf certificate's DER SHA-256 is pinned and CA-chain verification is bypassed. Mutually exclusive with `skip_tls_verify`, which is ignored when this field is set.
+- **reality** (object), Optional REALITY configuration (mutually exclusive with plain TLS). When set, REALITY replaces plain TLS as the security layer: it borrows a real site's certificate to complete the handshake and carries its own authentication, so `skip_tls_verify` and `fingerprint_sha256` are ignored.
+  - **public_key** (string), Required The server Reality public key (Base64 URL-safe encoded).
+  - **short_id** (string), Optional The short ID (hexadecimal string).
+- **shadow_tls** (object), Optional ShadowTLS transport configuration. See ShadowTLS for details.
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+https:
+  name: "my-https"
+  server: "proxy.example.com"
+  port: 443
+  username: "user"
+  password: "pass"
+  sni: "proxy.example.com"
+```
+
+## Vmess
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port.
+- **user_id** (string), Required The Vmess user ID (UUID).
+- **security** (string), Required Encryption method. `auto` (automatic selection, default), `aes-128-gcm`, `chacha20-poly1305`, `none`, `zero`
+- **legacy** (bool), Optional Whether to use the legacy Vmess protocol format (not recommended).
+- **tfo** (bool), Optional Whether to enable TCP Fast Open.
+- **udp_relay** (bool), Optional Whether to enable UDP relay.
+- **transport** (object), Optional Transport configuration. See Vmess Transport for details.
+- **block_quic** (bool), Optional Whether to block the QUIC protocol. When set to `true`, connections using this proxy will not use QUIC/HTTP3. This setting takes the highest priority, overriding both policy group and global `block_quic`. When not set, the policy group and global settings are used in order; if none are set, Vmess defaults to `true` (block QUIC).
+- **shadow_tls** (object), Optional ShadowTLS transport configuration. See ShadowTLS for details.
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+vmess:
+  name: "my-vmess"
+  server: "vmess.example.com"
+  port: 443
+  user_id: "00000000-0000-0000-0000-000000000000"
+  security: "auto"
+  legacy: false
+  tfo: true
+  udp_relay: true
+  transport:
+    ws:
+      path: "/myws"
+      headers:
+        Host: "vmess.example.com"
+```
+
+## Vless
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port.
+- **user_id** (string), Required The Vless user ID (UUID).
+- **tfo** (bool), Optional Whether to enable TCP Fast Open.
+- **udp_relay** (bool), Optional Whether to enable UDP relay.
+- **flow** (string), Optional Flow control mode. Supports `xtls-rprx-vision`.
+- **transport** (object), Optional Transport configuration. See Vmess Transport for details.
+- **block_quic** (bool), Optional Whether to block the QUIC protocol. When set to `true`, connections using this proxy will not use QUIC/HTTP3. This setting takes the highest priority, overriding both policy group and global `block_quic`. When not set, the policy group and global settings are used in order; if none are set, Vless defaults to `true` (block QUIC).
+- **shadow_tls** (object), Optional ShadowTLS transport configuration. See ShadowTLS for details.
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+vless:
+  name: "my-vless"
+  server: "vless.example.com"
+  port: 443
+  user_id: "11111111-1111-1111-1111-111111111111"
+  flow: xtls-rprx-vision
+  tfo: true
+  udp_relay: false
+  transport:
+    tls:
+      sni: www.microsoft.com
+      reality:
+        public_key: "base64_encoded_public_key"
+        short_id: "abc123"
+```
+
+## WireGuard
+
+- **name** (string), Required The proxy name, which must be globally unique.
+- **server** (string), Required The server address, which can be an IP or domain name.
+- **port** (integer), Required The server port.
+- **private_key** (string), Required The local private key (Base64-encoded, 32-byte X25519 key).
+- **peer_public_key** (string), Required The peer public key (Base64-encoded, 32-byte X25519 public key).
+- **preshared_key** (string), Optional The preshared key (Base64-encoded).
+- **reserved** (array of integer), Optional The reserved field (3-byte array). Used for client identification in services such as Cloudflare WARP. Format: `[byte1, byte2, byte3]`.
+- **local_ipv4** (string), Optional The local IPv4 address. Supports CIDR notation (e.g., `172.16.0.2/32`) or a plain IP. At least one of `local_ipv4` or `local_ipv6` must be set.
+- **local_ipv6** (string), Optional The local IPv6 address. Supports CIDR notation (e.g., `fd01:5ca1:ab1e::2/128`) or a plain IP.
+- **dns_servers** (array of string), Optional The list of DNS servers used internally by WireGuard.
+- **mtu** (integer), Optional MTU (Maximum Transmission Unit).
+- **keepalive** (integer), Optional Keepalive interval (in seconds).
+- **block_quic** (bool), Optional Whether to block the QUIC protocol. When set to `true`, connections using this proxy will not use QUIC/HTTP3. This setting takes the highest priority, overriding both policy group and global `block_quic`. When not set, the policy group and global settings are used in order; if none are set, WireGuard defaults to `false` (allow QUIC).
+- **prev_hop** (string), Optional The name of the preceding proxy, used to build a proxy chain. Traffic path: local machine -> preceding proxy -> current proxy -> destination.
+- **ip_version** (string), Optional IP version strategy applied when `server` is a domain that requires DNS resolution; it has no effect on an IP-literal `server`. One of `dual_stack` (default), `v4_only`, `v6_only`, `v4_prefer`, `v6_prefer`.
+
+### Configuration Example
+
+```yaml
+wireguard:
+  name: "WARP"
+  server: engage.cloudflareclient.com
+  port: 2408
+  private_key: "base64_encoded_private_key"
+  peer_public_key: "base64_encoded_public_key"
+  local_ipv4: 172.16.0.2/32
+  local_ipv6: "fd01:5ca1:ab1e::2/128"
+  reserved: [1, 2, 3]
+  mtu: 1280
+  keepalive: 25
+```
+
+## Vmess Transport
+
+Used in the `transport` field of Vmess and Vless proxy types. The available options and example configurations are as follows:
+
+### HTTP 1
+
+Disguises proxy traffic as HTTP/1.1 requests.
+
+```yaml
+transport:
+  http1:
+    method: "GET"
+    path: "/"
+    headers:
+      User-Agent: "curl/7.77.0"
+      Accept: "*/*"
+```
+
+### HTTP 2
+
+Transmits proxy traffic over HTTP/2 multiplexing.
+
+```yaml
+transport:
+  http2:
+    method: "GET"
+    path: "/"
+    headers:
+      User-Agent: "curl/7.77.0"
+      Accept: "*/*"
+    sni: "example.com"
+    skip_tls_verify: true
+    fingerprint_sha256: "aa:bb:cc:..."
+```
+
+The `fingerprint_sha256` field accepts a SHA-256 fingerprint of the server's leaf certificate (hex, case-insensitive; `:` or `-` separators allowed). When set, the leaf certificate's DER SHA-256 is pinned and `skip_tls_verify` is ignored.
+
+### TLS
+
+Transmits traffic directly over TLS encryption. Supports Reality configuration.
+
+```yaml
+transport:
+  tls:
+    sni: "my-sni.example.com"
+    skip_tls_verify: true
+    fingerprint_sha256: "aa:bb:cc:..."
+```
+
+The `fingerprint_sha256` field behaves the same as in HTTP 2.
+
+#### Reality Configuration
+
+```yaml
+transport:
+  tls:
+    sni: www.microsoft.com
+    reality:
+      public_key: "base64_encoded_public_key"
+      short_id: "abc123"
+```
+
+- **public_key** (string), Required - The server Reality public key (Base64 URL-safe encoded).
+- **short_id** (string), Optional - The short ID (hexadecimal string).
+
+### WSS
+
+Encapsulates proxy traffic in WebSocket and transmits it over TLS encryption.
+
+```yaml
+transport:
+  wss:
+    path: "/websocket"
+    headers:
+      Host: "myhost.example.com"
+    sni: "my-sni.example.com"
+    skip_tls_verify: false
+    fingerprint_sha256: "aa:bb:cc:..."
+```
+
+The `fingerprint_sha256` field behaves the same as in HTTP 2.
+
+### WS
+
+Encapsulates proxy traffic in WebSocket (without TLS encryption).
+
+```yaml
+transport:
+  ws:
+    path: "/ws"
+    headers:
+      Host: "myhost.example.com"
+```
+
+### gRPC
+
+Encapsulates proxy traffic in a gRPC bidirectional stream, carried over TLS with ALPN `h2`. The TLS layer is always applied, so gRPC traffic is always encrypted.
+
+```yaml
+transport:
+  grpc:
+    service_name: "GunService"
+    sni: "example.com"
+    skip_tls_verify: false
+    fingerprint_sha256: "aa:bb:cc:..."
+```
+
+- **service_name** (string), Optional - The gRPC service name (e.g. `GunService`); it must match the server. A value starting with `/` switches to custom-path mode (e.g. `/your/path/Tun`).
+- **user_agent** (string), Optional - Custom User-Agent. Defaults to a Chrome User-Agent for traffic camouflage.
+- **sni** (string), Optional - TLS SNI. Defaults to the server address.
+- **skip_tls_verify** (bool), Optional - Whether to skip TLS certificate verification.
+- **fingerprint_sha256** (string), Optional - Behaves the same as in HTTP 2.
+
+gRPC can also run over REALITY instead of plain TLS by adding a `reality` block (same fields as the TLS transport):
+
+```yaml
+transport:
+  grpc:
+    service_name: "grpc"
+    sni: www.microsoft.com
+    reality:
+      public_key: "base64_encoded_public_key"
+      short_id: "abc123"
+```
+
+## ShadowTLS
+
+ShadowTLS transport configuration, available for use in Shadowsocks, Trojan, AnyTLS, SOCKS5, SOCKS5 over TLS, SSH, HTTP, HTTPS, Vmess, and Vless proxy types.
+
+- **password** (string), Required The ShadowTLS authentication password.
+- **sni** (string), Optional TLS SNI (used for disguise, e.g., `www.microsoft.com`).
+
+### Configuration Example
+
+```yaml
+shadowsocks:
+  name: "SS with ShadowTLS"
+  server: example.com
+  port: 443
+  method: aes-256-gcm
+  password: ss_password
+  shadow_tls:
+    password: shadow_tls_password
+    sni: www.microsoft.com
+```
+
+<!-- page: configuration/policy_groups -->
+
+# Policy groups
+
+> Policy groups, group types, filters, flattening and subscriptions.
+
+> Source: https://egernapp.com/docs/configuration/policy_groups
+
+# Policy Groups
+
+Policy groups are used to organize and manage multiple proxy nodes, determining which node to use based on different selection strategies. Policy groups can contain proxy servers, other policy groups, or built-in policies, and can also mount subscription sources via `urls`.
+
+Supported policy group types: `select` (manual selection), `auto_test` (automatic latency test), `smart` (smart selection), `fallback` (failover), `load_balance` (load balancing), `external` (external resource), `conditional` (conditional selection).
+
+Built-in policies: `DIRECT` (direct connection), `REJECT` (reject connection).
+
+## Common Fields
+
+The following fields are common to the five basic policy group types (`select`, `auto_test`, `smart`, `fallback`, `load_balance`):
+
+- **name** (string), required Policy group name, must be globally unique.
+- **policies** (string array), optional List of sub-policies. Can be proxy server names, other policy group names, or built-in policies (`DIRECT`, `REJECT`). May be omitted; a group with only `urls` configured is a pure subscription group.
+- **flatten** (bool), optional Expand all proxy nodes from nested policy groups. When set to `true`, nodes within sub-policy groups are fully expanded rather than showing only the policy group name. Often used in conjunction with `filter`.
+- **filter** (string), optional A regular expression filter that retains only nodes whose names match (e.g., `(?i)香港|HK`). Always applies to subscription nodes from `urls`; static sub-policies are filtered only when expanded via `flatten`.
+- **urls** (string array), optional List of subscription URLs, supporting HTTP/HTTPS URLs or local file paths; nodes from multiple subscriptions are merged. Can be configured together with `policies`: subscription nodes are placed after the static sub-policies and deduplicated by name. See Subscription File Format for the file format.
+- **update_interval** (integer), optional Subscription update interval in seconds, default 86400 (24 hours). Set to 0 or a negative value to disable automatic updates. Only takes effect when `urls` is configured.
+- **block_quic** (bool), optional Block the QUIC protocol. When set to `true`, connections using this policy group will not use the QUIC/HTTP3 protocol. Takes priority over the global `block_quic`, but is overridden by the proxy's own `block_quic` setting.
+- **icon** (string), optional Icon, supports SF Symbols names or icon URLs.
+- **hidden** (bool), optional Whether to hide this policy group in the UI.
+- **prev_hop** (string), optional Previous hop proxy, used to build proxy chains. Traffic path: local device → previous hop proxy → current node → destination.
+- **latency_test_url** (string), optional Per-group latency test / health check URL. Takes precedence over the global `proxy_latency_test_url` and `direct_latency_test_url`; falls back to the global settings when not configured. For `select`, this is used for manual latency tests from the UI; for `auto_test`, for automatic latency testing; for `fallback` and `load_balance`, for background health checks.
+
+## Manual Selection
+
+The user manually selects which sub-policy to use.
+
+Uses only the common fields, no additional fields.
+
+```yaml
+- select:
+    name: "Manual Selection"
+    policies:
+      - HK Node
+      - JP Node
+      - Auto Select
+    icon: globe
+```
+
+## Auto Test
+
+Periodically tests the latency of all sub-policies and automatically selects the node with the lowest latency. When a node with lower latency is detected, it decides whether to switch based on `tolerance`.
+
+In addition to the common fields, the following fields are also supported:
+
+- **interval** (integer), optional Latency test interval in seconds, default 600. Set to 0 or a negative value to disable automatic latency testing.
+- **tolerance** (integer), optional Switch tolerance in milliseconds, default 100. A switch occurs only when the new node's latency is faster than the current node by more than this value, preventing frequent switches when latencies are similar.
+- **timeout** (integer), optional Timeout for a single node's latency test in seconds, default 5, maximum 60.
+
+```yaml
+- auto_test:
+    name: "Auto Select"
+    policies:
+      - HK Node
+      - JP Node
+    interval: 600
+    tolerance: 100
+    timeout: 5
+```
+
+## Smart Selection
+
+Continuously learns the health of each candidate node across probe rounds and picks the most robust one based on a combined score of latency, jitter, and reliability. Runtime failures are also fed back to the health profile so subsequent selections automatically avoid recently unstable nodes.
+
+Differences from `auto_test`:
+
+- **Not misled by single-round noise** — abnormal samples in one round are smoothed out by EWMA.
+- **Avoids "low latency but unstable" nodes** — success rate is part of the ranking.
+- **Switches with hysteresis** — a candidate must be sufficiently cheaper than the current node and the minimum dwell time must have elapsed before switching.
+- **Adaptive probe cadence** — the probe interval lengthens when stable and shortens after a switch or failure.
+
+Tuning parameters (sample count, hysteresis thresholds, jitter weight, etc.) use empirical defaults and are not configurable.
+
+In addition to the common fields, the following fields are also supported:
+
+- **priorities** (object), optional Sub-policy priority coefficients. Keys are regular expressions matched against sub-policy names; values are coefficients multiplied onto the candidate's health score: Rules are evaluated in declaration order; the first regex that matches a candidate wins. Use `^name$` for an exact name match.
+  - `< 1` raises priority (score becomes smaller — easier to be selected)
+  - `> 1` lowers priority
+  - `0` always picks this candidate first; falls back to others when it fails
+  - Default `1` (no bias)
+
+```yaml
+- smart:
+    name: "Smart Selection"
+    policies:
+      - HK Premium
+      - HK Standard
+      - JP Node
+    priorities:
+      "^HK Premium$": 0.8   # always prefer this node
+      "(?i)HK": 0.9         # other HK nodes are slightly preferred
+      "JP": 1.2             # JP nodes are deprioritized
+```
+
+## Fallback
+
+Tries sub-policies in order and selects the first available node. When the current node becomes unavailable, it automatically switches to the next one; when a higher-priority node becomes available again, it automatically switches back.
+
+In addition to the common fields, the following fields are also supported:
+
+- **interval** (integer), optional Health check interval in seconds, default 600. Set to 0 or a negative value to disable automatic health checks.
+- **timeout** (integer), optional Timeout for a single node's health check in seconds, default 5, maximum 60.
+
+```yaml
+- fallback:
+    name: "Fallback"
+    policies:
+      - Primary Node
+      - Backup Node 1
+      - Backup Node 2
+    interval: 600
+```
+
+## Load Balance
+
+Distributes traffic across multiple sub-policies. By default, connections to the same domain or IP are assigned to the same node, while different domains/IPs are distributed across different nodes; set `algorithm` to switch to round-robin rotation.
+
+In addition to the common fields, the following fields are also supported:
+
+- **algorithm** (string), optional Load balancing algorithm. Possible values: Both algorithms skip nodes that fail health checks.
+  - `hash` (default) — hash by destination. Connections to the same destination domain/IP are assigned to a fixed node, while different destinations are spread across different nodes.
+  - `round_robin` — rotation. Each new connection rotates to the next available node in turn. Connections to the same destination are also spread across different nodes, so the egress IP is not fixed, which may affect sites that rely on a stable egress IP.
+
+```yaml
+- load_balance:
+    name: "Load Balance"
+    policies:
+      - Node 1
+      - Node 2
+      - Node 3
+    algorithm: round_robin
+```
+
+## External Resource
+
+Loads a list of proxy nodes from a remote URL, supporting airport subscription links. Multiple subscription URLs can be configured, and nodes from all subscriptions are merged.
+info
+External is the legacy subscription-only form, kept for compatibility with existing configurations: it is equivalent to configuring `urls` directly on a policy group of the corresponding `type`, which additionally supports mixing subscriptions with static `policies`. External does not use the `policies` and `flatten` fields.
+
+- **name** (string), required Policy group name, must be globally unique.
+- **type** (string), required Selection strategy after loading nodes. Possible values: `select`, `auto_test`, `smart`, `fallback`, `load_balance`.
+- **urls** (string array), required List of subscription URLs, supporting HTTP/HTTPS URLs or local file paths. Nodes from multiple subscriptions are merged.
+- **filter** (string), optional A regular expression filter that retains only nodes whose names match from the subscription (e.g., `(?i)香港|HK`).
+- **interval** (integer), optional Latency test / health check interval in seconds, only effective for `auto_test` and `fallback` types, default 600.
+- **tolerance** (integer), optional Switch tolerance in milliseconds, only effective for the `auto_test` type, default 100.
+- **timeout** (integer), optional Latency test / health check timeout in seconds, default 5, maximum 60.
+- **priorities** (object), optional Sub-policy priority coefficients, only effective for the `smart` type. See Smart Selection for semantics.
+- **algorithm** (string), optional Load balancing algorithm, only effective for the `load_balance` type. See Load Balance for semantics.
+- **update_interval** (integer), optional Subscription update interval in seconds, default 86400 (24 hours). Set to 0 or a negative value to disable automatic updates.
+- **latency_test_url** (string), optional Per-group latency test / health check URL. Takes precedence over the global `proxy_latency_test_url` and `direct_latency_test_url`; falls back to the global settings when not configured. Used for automatic latency tests when `type: auto_test`, and for health checks when `type: fallback`.
+- **block_quic** (bool), optional Block the QUIC protocol.
+- **icon** (string), optional Icon, supports SF Symbols names or icon URLs.
+- **hidden** (bool), optional Whether to hide this policy group in the UI.
+- **prev_hop** (string), optional Previous hop proxy.
+
+```yaml
+- external:
+    name: "Subscription"
+    type: auto_test
+    urls:
+      - "https://example.com/subscribe"
+    filter: "(?i)香港|HK"
+    interval: 600
+    tolerance: 100
+    update_interval: 86400
+```
+
+### Subscription File Format
+
+Local or remote subscription files should return a set of proxy server configurations:
+
+```yaml
+proxies:
+  - trojan:
+      name: HK Node
+      server: hk.example.com
+      port: 443
+      password: password
+      udp_relay: true
+  - shadowsocks:
+      name: JP Node
+      server: jp.example.com
+      port: 8388
+      method: aes-256-gcm
+      password: password
+```
+
+## Conditional Selection
+
+Automatically selects a sub-policy based on the current network environment (Wi-Fi SSID, BSSID, cellular network type). Rules are matched in order, and the first matching policy is used; if none match, the default policy is used.
+
+- **name** (string), required Policy group name, must be globally unique.
+- **rules** (array), required List of matching rules, matched in order. Three rule types are supported: Each rule contains two fields: `match` (glob match pattern) and `policy` (the policy to use when matched).
+  - **ssid** - Wi-Fi name matching, supports glob wildcards (e.g., `Home-*`, `Office*`)
+  - **bssid** - Wi-Fi router MAC address matching, supports glob wildcards (e.g., `aa:bb:cc:*`)
+  - **cellular** - Cellular network type matching, supports glob wildcards. Available values: `NR` (5G), `NRNSA` (5G NSA), `LTE` (4G), `WCDMA`, `HSDPA`, `HSUPA`, `CDMA`, `eHRPD`, `EDGE`, `GPRS`
+- **default_policy** (string), required Default policy, used when no rules match.
+- **block_quic** (bool), optional Block the QUIC protocol.
+- **icon** (string), optional Icon, supports SF Symbols names or icon URLs.
+- **hidden** (bool), optional Whether to hide this policy group in the UI.
+- **prev_hop** (string), optional Previous hop proxy.
+- **latency_test_url** (string), optional Per-group latency test URL. Takes precedence over the global `proxy_latency_test_url` and `direct_latency_test_url`; falls back to the global settings when not configured. Used for manual latency tests of sub-policies from the UI.
+
+```yaml
+- conditional:
+    name: "Network Environment"
+    rules:
+      - ssid:
+          match: "Home-*"
+          policy: DIRECT
+      - bssid:
+          match: "aa:bb:cc:*"
+          policy: HK Node
+      - cellular:
+          match: "LTE"
+          policy: Auto Select
+    default_policy: Manual Selection
+```
+
+## Configuration Example
+
+```yaml
+policy_groups:
+  # Manual selection: filter Hong Kong nodes from subscription
+  - select:
+      name: "HK Node"
+      policies:
+        - Subscription
+      flatten: true
+      filter: "(?i)香港|HK|Hong Kong"
+      icon: globe
+
+  # Auto test
+  - auto_test:
+      name: "Auto Select"
+      policies:
+        - HK Node
+        - JP Node
+      interval: 600
+      tolerance: 100
+
+  # Mix static nodes with a subscription: subscription nodes come after
+  # the static sub-policies and are deduplicated by name
+  - auto_test:
+      name: "Subscription Picks"
+      policies:
+        - Self-hosted Node
+      urls:
+        - "https://example.com/subscribe"
+      filter: "(?i)香港|HK"
+      update_interval: 86400
+
+  # Smart selection
+  - smart:
+      name: "Smart Selection"
+      policies:
+        - HK Node
+        - JP Node
+        - SG Node
+
+  # Fallback
+  - fallback:
+      name: "Fallback"
+      policies:
+        - Primary Node
+        - Backup Node
+      interval: 600
+
+  # Load balance
+  - load_balance:
+      name: "Load Balance"
+      policies:
+        - Node 1
+        - Node 2
+
+  # External resource: merge multiple subscriptions
+  - external:
+      name: "Subscription"
+      type: auto_test
+      urls:
+        - "https://provider1.com/subscribe"
+        - "https://provider2.com/subscribe"
+      filter: "(?i)香港|日本|HK|JP"
+      update_interval: 86400
+
+  # Conditional policy group: switch based on network environment
+  - conditional:
+      name: "Network Environment"
+      rules:
+        - ssid:
+            match: "Home-*"
+            policy: DIRECT
+        - cellular:
+            match: "NR*"
+            policy: Auto Select
+      default_policy: HK Node
+```
+
+<!-- page: configuration/rules -->
+
+# Rules
+
+> Routing rule syntax and rule sets, including remote rule set references.
+
+> Source: https://egernapp.com/docs/configuration/rules
+
+# Rules
+
+Egern supports multiple types of rules that can be used to control the proxy behavior of network traffic and to block certain traffic. Rules are matched in the order they appear in the configuration; once a rule matches, subsequent rules are no longer evaluated.
+
+## Supported Rules
+
+### Domain Rules
+
+| Type | Name | Description |
+| --- | --- | --- |
+| domain | Exact Domain Match | Matches the domain exactly |
+| domain_suffix | Domain Suffix Match | Matches domains by suffix, automatically handling subdomain boundaries (e.g., google.com matches www.google.com but not fakegoogle.com) |
+| domain_keyword | Domain Keyword Match | Matches domains containing the specified keyword |
+| domain_regex | Domain Regex Match | Matches domains using regular expressions |
+| domain_wildcard | Domain Wildcard Match | Matches domains using glob patterns, case-insensitive (e.g., *.google.*) |
+
+### IP Rules
+
+| Type | Name | Description |
+| --- | --- | --- |
+| geoip | GeoIP Match | Matches IP addresses based on ISO 3166-1 alpha-2 country/region codes (e.g., CN, US) |
+| ip_cidr | IPv4 Range Match | Matches the specified IPv4 CIDR range |
+| ip_cidr6 | IPv6 Range Match | Matches the specified IPv6 CIDR range |
+| asn | ASN Match | Matches ASN numbers or organization names (e.g., 13335, AS13335, Telegram Messenger Inc) |
+
+### Other Rules
+
+| Type | Name | Description |
+| --- | --- | --- |
+| url_regex | URL Regex Match | Matches the full URL using regular expressions (HTTP/HTTPS traffic only) |
+| user_agent | User-Agent Match | Matches the User-Agent header using glob patterns, case-insensitive (HTTP/HTTPS traffic only) |
+| dest_port | Destination Port Match | Matches the destination port; supports single ports, ranges, and mixed formats (e.g., 80,443,8000-9000) |
+| protocol | Protocol Match | Matches the protocol type: tcp, udp, http, https, quic, stun |
+| rule_set | Rule Set | References a local or remote rule set file, allowing multiple rules to be bundled for reuse |
+
+### Network Environment Rules
+
+| Type | Name | Description |
+| --- | --- | --- |
+| ssid | Wi-Fi SSID Match | Matches the current Wi-Fi name using glob patterns, case-insensitive |
+| bssid | Wi-Fi BSSID Match | Matches the MAC address of the current Wi-Fi access point using glob patterns |
+| cellular | Cellular Network Match | Matches the cellular network type using glob patterns (e.g., NR, LTE, WCDMA) |
+
+### Logical Rules
+
+| Type | Name | Description |
+| --- | --- | --- |
+| and | Logical AND | Matches when all sub-conditions are satisfied |
+| or | Logical OR | Matches when any sub-condition is satisfied |
+| not | Logical NOT | Matches when the sub-condition is not satisfied |
+
+### Default Rule
+
+| Type | Name | Description |
+| --- | --- | --- |
+| default | Default Rule | A fallback rule that matches all traffic not matched by any other rule |
+
+## Rule Fields
+
+- **match** (string), required The value to match.
+- **policy** (string), required The policy name. Determines how matched traffic should be handled. `DIRECT` means direct connection, `REJECT` means the connection is refused. You can also use the name of a proxy server or policy group.
+- **name** (string), optional The rule name, used for logging and debugging.
+- **no_resolve** (bool), optional Applicable only to IP-based rules (geoip, ip_cidr, ip_cidr6, asn). When set to `true`, the rule only matches already-resolved IP addresses and will not trigger DNS resolution.
+- **disabled** (bool), optional Whether to disable this rule.
+
+## Configuration Example
+
+```yaml
+rules:
+  - domain:
+      match: www.google.com
+      policy: Proxy
+  - domain_keyword:
+      match: google
+      policy: Proxy
+  - domain_suffix:
+      match: google.com
+      policy: Proxy
+  - domain_regex:
+      match: "^ads?\\."
+      policy: REJECT
+  - domain_wildcard:
+      match: "*.google.*"
+      policy: Proxy
+  - geoip:
+      match: CN
+      policy: DIRECT
+      no_resolve: true
+  - ip_cidr:
+      match: 192.168.0.0/16
+      policy: DIRECT
+  - ip_cidr6:
+      match: "2001:db8::/32"
+      policy: REJECT
+  - asn:
+      match: "AS13335"
+      policy: Proxy
+  - url_regex:
+      match: "^https://.*\\.google\\.com/"
+      policy: Proxy
+  - user_agent:
+      match: "*Chrome*"
+      policy: Proxy
+  - dest_port:
+      match: "80,443,8000-9000"
+      policy: Proxy
+  - protocol:
+      match: udp
+      policy: DIRECT
+  - ssid:
+      match: "Home*"
+      policy: DIRECT
+  - rule_set:
+      match: "https://example.com/rules.yaml"
+      policy: Proxy
+      update_interval: 86400
+  - and:
+      match:
+        - domain_suffix:
+            match: "example.com"
+        - dest_port:
+            match: "443"
+      policy: Proxy
+  - or:
+      match:
+        - domain_keyword:
+            match: "google"
+        - domain_keyword:
+            match: "youtube"
+      policy: Proxy
+  - not:
+      match:
+        geoip:
+          match: CN
+      policy: Proxy
+  - default:
+      policy: DIRECT
+```
+
+## Rule Sets
+
+Rule sets can be local or remote files. They allow you to reuse or share rules across multiple configuration files. All conditions within a rule set use a logical OR relationship, meaning the entire rule set matches if any single condition matches.
+
+### Rule Set Fields
+
+| Type | Name |
+| --- | --- |
+| domain_set | Exact Domain Match Set |
+| domain_keyword_set | Domain Keyword Match Set |
+| domain_suffix_set | Domain Suffix Match Set |
+| domain_regex_set | Domain Regex Match Set |
+| domain_wildcard_set | Domain Wildcard Match Set |
+| geoip_set | GeoIP Country/Region Code Set |
+| ip_cidr_set | IPv4 CIDR Set |
+| ip_cidr6_set | IPv6 CIDR Set |
+| url_regex_set | URL Regex Match Set |
+| asn_set | ASN Number or Organization Name Set |
+| user_agent_set | User-Agent Glob Pattern Set |
+| ssid_set | Wi-Fi SSID Glob Pattern Set |
+| bssid_set | Wi-Fi BSSID Glob Pattern Set |
+| cellular_set | Cellular Network Type Glob Pattern Set |
+| protocol_set | Protocol Match Set |
+| dest_port_set | Destination Port Match Set |
+| and_set | Logical AND Rule Set |
+| or_set | Logical OR Rule Set |
+| not_set | Logical NOT Rule Set |
+
+- **no_resolve:** (optional) Whether to skip DNS resolution; affects all IP-related rules.
+
+### Rule Set Example
+
+```yaml
+no_resolve: true
+domain_set:
+  - www.google.com
+  - www.youtube.com
+domain_keyword_set:
+  - google
+  - youtube
+domain_suffix_set:
+  - google.com
+  - youtube.com
+domain_regex_set:
+  - "google|gstatic|ytimg|youtube|ggpht"
+domain_wildcard_set:
+  - "*.google.*"
+geoip_set:
+  - US
+  - JP
+ip_cidr_set:
+  - 192.168.0.0/16
+ip_cidr6_set:
+  - "2001:db8::/32"
+url_regex_set:
+  - "^https://www\\.google\\.com/"
+asn_set:
+  - "AS15169"
+user_agent_set:
+  - "*Chrome*"
+dest_port_set:
+  - "80,443"
+protocol_set:
+  - udp
+```
+
+<!-- page: configuration/scriptings -->
+
+# Scriptings
+
+> Script configuration: http_request, http_response, schedule, generic and network scripts.
+
+> Source: https://egernapp.com/docs/configuration/scriptings
+
+# Scripting
+
+Egern allows users to flexibly control network request/response handling, scheduled tasks, network change events, and manually triggered generic scripts by writing JavaScript scripts.
+
+## Script Types
+
+The `scriptings` configuration includes five types of scripts:
+
+| Type | Description |
+| --- | --- |
+| http_request | HTTP request script, executed before sending the request |
+| http_response | HTTP response script, executed after receiving the response |
+| schedule | Scheduled script, executed at intervals based on a cron expression |
+| generic | Generic script, manually triggered |
+| network | Network change script, executed when the network environment changes |
+
+## HTTP Request/Response Scripts
+
+- **name** (string), required The name of the script.
+- **match** (string), required A regular expression for URL matching.
+- **script_url** (string), required The URL of the script file, which can be a local path or a remote link.
+- **env** (object), optional Environment variables (key-value pairs) passed to the script, accessible via `ctx.env`. See [Environment Variables](https://egernapp.com/docs/configuration/env) for details.
+- **update_interval** (integer), optional The update interval for the script file in seconds. Defaults to 86400 (24 hours).
+- **max_size** (integer), optional The maximum request/response body size to process in bytes. Bodies exceeding this size will not be passed to the script. Defaults to 1048576 (1MB).
+- **timeout** (integer), optional The script execution timeout in seconds. Defaults to 10 seconds, with a maximum of 600 seconds.
+- **body_required** (boolean), optional Whether the request/response body is needed. Defaults to `false`. Set to `true` if you need to read or modify the body.
+- **binary_body** (boolean), optional Whether to handle the request/response body in binary mode. Defaults to `false`. Set to `true` when processing binary content such as images.
+- **disabled** (boolean), optional Whether to disable this script.
+
+## Scheduled Scripts
+
+Execute scripts at scheduled intervals based on cron expressions, suitable for scenarios such as scheduled check-ins and data synchronization.
+
+Supports the standard 5-field format (minute, hour, day, month, weekday) and the 6-field format (second, minute, hour, day, month, weekday).
+
+- **name** (string), required The name of the script.
+- **cron** (string), required A cron expression (e.g., `0 8 * * *` means every day at 8:00 AM).
+- **script_url** (string), required The URL of the script file, which can be a local path or a remote link.
+- **env** (object), optional Environment variables (key-value pairs) passed to the script, accessible via `ctx.env`. See [Environment Variables](https://egernapp.com/docs/configuration/env) for details.
+- **update_interval** (integer), optional The update interval for the script file in seconds. Defaults to 86400.
+- **timeout** (integer), optional The script execution timeout in seconds. Defaults to 10 seconds, with a maximum of 600 seconds.
+- **disabled** (boolean), optional Whether to disable this script.
+
+## Generic Scripts
+
+Manually triggered scripts, primarily used as associated scripts for [Widgets](https://egernapp.com/docs/configuration/widgets).
+
+- **name** (string), required The name of the script.
+- **script_url** (string), required The URL of the script file.
+- **env** (object), optional Environment variables (key-value pairs) passed to the script, accessible via `ctx.env`. See [Environment Variables](https://egernapp.com/docs/configuration/env) for details.
+- **update_interval** (integer), optional The update interval for the script file in seconds. Defaults to 86400.
+- **timeout** (integer), optional The script execution timeout in seconds. Defaults to 10 seconds, with a maximum of 600 seconds.
+- **disabled** (boolean), optional Whether to disable this script.
+
+## Network Change Scripts
+
+Execute scripts when the network environment changes, such as Wi-Fi switching, cellular network connection, VPN status changes, and similar scenarios. Can be used for automatically switching proxy nodes, sending notifications, and more.
+
+- **name** (string), required The name of the script.
+- **script_url** (string), required The URL of the script file.
+- **env** (object), optional Environment variables (key-value pairs) passed to the script, accessible via `ctx.env`. See [Environment Variables](https://egernapp.com/docs/configuration/env) for details.
+- **update_interval** (integer), optional The update interval for the script file in seconds. Defaults to 86400.
+- **timeout** (integer), optional The script execution timeout in seconds. Defaults to 10 seconds, with a maximum of 600 seconds.
+- **disabled** (boolean), optional Whether to disable this script.
+
+## Configuration Example
+
+```yaml
+scriptings:
+  - http_request:
+      name: "Modify Request Headers"
+      match: "^https://api\\.example\\.com/"
+      script_url: "https://example.com/scripts/modify-header.js"
+      env:
+        TOKEN: "my-secret-token"
+      timeout: 30
+      body_required: true
+  - http_response:
+      name: "Parse Response"
+      match: "^https://api\\.example\\.com/data"
+      script_url: "https://example.com/scripts/parse-response.js"
+      body_required: true
+      max_size: 2097152
+  - schedule:
+      name: "Daily Check-in"
+      cron: "0 8 * * *"
+      script_url: "https://example.com/scripts/daily-checkin.js"
+      env:
+        USERNAME: "user123"
+  - generic:
+      name: "server-status"
+      script_url: "https://example.com/scripts/server-status.js"
+      env:
+        API_URL: "https://api.example.com/status"
+  - network:
+      name: "Network Change Notification"
+      script_url: "https://example.com/scripts/network-change.js"
+      timeout: 30
+```
+
+<!-- page: configuration/url_rewrites -->
+
+# URL rewrites
+
+> URL rewrite rules for MITM traffic.
+
+> Source: https://egernapp.com/docs/configuration/url_rewrites
+
+# URL Rewriting
+
+The URL rewriting feature supports three modes:
+
+- **Redirect mode**: Returns an HTTP 3xx redirect response. The client is aware of the redirect and initiates a new request.
+- **Header mode**: Directly modifies the request URI and Host header, transparently forwarding the request to the new address without the client's awareness.
+- **Reject mode**: Directly returns a specific response body to block the request, commonly used for ad filtering.
+
+Rewriting the URL of HTTPS requests requires configuring MITM and installing a CA certificate. Below is a detailed explanation of each field:
+
+- **match** (string), required A regular expression for URL matching, which matches the full request URL (including protocol, hostname, path, and query parameters). Capture groups are supported.
+- **location** (string), required The redirect target URL. Supports referencing capture groups with `$1`, `$2`, etc. The following special values can also be used to block requests:
+  - `http://reject/` — returns a 404 empty response
+  - `http://reject-200/` — returns a 200 empty response
+  - `http://reject-dict/` — returns an empty JSON object `{}`
+  - `http://reject-array/` — returns an empty JSON array `[]`
+  - `http://reject-img/` — returns a 1×1 transparent GIF
+  - `http://reject-video/` — returns an empty MP4
+- **status_code** (integer), optional The HTTP redirect status code (`301` permanent redirect, `302` temporary redirect, `307` temporary redirect preserving method, `308` permanent redirect preserving method). When omitted, header mode is used.
+- **disabled** (bool), optional Whether to disable this rule.
+
+## Configuration Example
+
+```yaml
+url_rewrites:
+  # Redirect mode: returns a 307 redirect response
+  - match: "(.*google)\\.cn"
+    location: $1.com
+    status_code: 307
+
+  # Redirect mode: returns a 301 permanent redirect
+  - match: "^https://old\\.example\\.com/(.*)$"
+    location: "https://new.example.com/$1"
+    status_code: 301
+
+  # Header mode: transparent forwarding, client unaware
+  - match: "^https://api\\.example\\.com/v1/(.*)$"
+    location: "https://api.example.com/v2/$1"
+
+  # Reject mode: block ad requests, return an empty JSON object
+  - match: "^https://ads\\.example\\.com"
+    location: "http://reject-dict/"
+```
+
+In the first example, the system will find all requests whose URL matches `(.*google)\.cn` and return a 307 redirect response to redirect them to the corresponding `.com` domain. In the third example, the system transparently forwards matching requests to the v2 API without the client being aware of the address change. In the last example, matching ad requests are blocked and an empty JSON object is returned.
+
+<!-- page: configuration/header_rewrites -->
+
+# Header rewrites
+
+> Request and response header rewriting.
+
+> Source: https://egernapp.com/docs/configuration/header_rewrites
+
+# HTTP Header Rewriting
+
+The HTTP header rewriting feature allows users to add, replace, or delete headers in HTTP requests or responses that match specific URLs. MITM decryption is required to modify HTTPS traffic.
+
+## Adding Header Information
+
+If the header already exists, it will be replaced; if it does not exist, it will be added.
+
+- **match** (string), required A regular expression for URL matching.
+- **name** (string), required The name of the header to add.
+- **value** (string), required The value of the header to add.
+- **type** (string), optional Applies to `request` or `response`. Defaults to `request`.
+- **disabled** (bool), optional Whether to disable this rule.
+
+### Configuration Example
+
+```yaml
+header_rewrites:
+  - add:
+      match: "^https://example\\.com"
+      name: X-Custom-Header
+      value: custom-value
+      type: request
+```
+
+## Replacing Header Information
+
+Semantically intended for replacing the value of an existing header. The actual behavior is the same as `add`: if the header exists, it will be replaced; if it does not exist, it will be added.
+
+- **match** (string), required A regular expression for URL matching.
+- **name** (string), required The name of the header to replace.
+- **value** (string), required The new value of the header.
+- **type** (string), optional Applies to `request` or `response`. Defaults to `request`.
+- **disabled** (bool), optional Whether to disable this rule.
+
+### Configuration Example
+
+```yaml
+header_rewrites:
+  - replace:
+      match: "^https://api\\.example\\.com"
+      name: Cache-Control
+      value: no-cache
+      type: response
+```
+
+## Deleting Header Information
+
+- **match** (string), required A regular expression for URL matching.
+- **name** (string), required The name of the header to delete.
+- **type** (string), optional Applies to `request` or `response`. Defaults to `request`.
+- **disabled** (bool), optional Whether to disable this rule.
+
+### Configuration Example
+
+```yaml
+header_rewrites:
+  - delete:
+      match: ".*"
+      name: X-Tracking-Id
+      type: request
+```
+
+<!-- page: configuration/body_rewrites -->
+
+# Body rewrites
+
+> Request and response body rewriting, including JQ expressions.
+
+> Source: https://egernapp.com/docs/configuration/body_rewrites
+
+# HTTP Message Body Rewriting
+
+Message body rewriting allows users to modify the body of HTTP requests or responses that match specific URLs. It supports two methods: regex replacement and jq filters. MITM decryption is required to modify HTTPS traffic.
+
+## Regex Replacement
+
+Find and replace content in the message body using regular expressions.
+
+### Request Body Regex Replacement (request_regex)
+
+- **match** (string), required A regular expression for URL matching.
+- **find** (string), required A regular expression to search for in the message body. Capture groups are supported.
+- **replace** (string), required The replacement content. Supports referencing capture groups with `$1`, `$2`, etc.
+- **disabled** (bool), optional Whether to disable this rule.
+
+### Response Body Regex Replacement (response_regex)
+
+The fields are the same as request body regex replacement, but apply to the response body.
+
+```yaml
+body_rewrites:
+  - response_regex:
+      match: "^https://api\\.example\\.com/data"
+      find: '"status":\s*"pending"'
+      replace: '"status": "completed"'
+  - request_regex:
+      match: "^https://api\\.example\\.com/submit"
+      find: '"version":\s*"1.0"'
+      replace: '"version": "2.0"'
+```
+
+## jq Filter
+
+Use jq expressions to process JSON-formatted message bodies, suitable for making structured modifications to JSON data.
+
+### Request Body jq Filter (request_jq)
+
+- **match** (string), required A regular expression for URL matching.
+- **filter** (string), required A jq filter expression (e.g., `.data.field = "value"` or `del(.unwanted)`).
+- **disabled** (bool), optional Whether to disable this rule.
+
+### Response Body jq Filter (response_jq)
+
+The fields are the same as request body jq filter, but apply to the response body.
+
+```yaml
+body_rewrites:
+  - request_jq:
+      match: "^https://api\\.example\\.com/submit"
+      filter: '.data.timestamp = now |.data.version = "2.0"'
+  - response_jq:
+      match: "^https://api\\.example\\.com/data"
+      filter: 'del(.tracking) |.data.processed = true'
+```
+
+## Configuration Example
+
+```yaml
+body_rewrites:
+  # Response body regex replacement
+  - response_regex:
+      match: "^https://api\\.example\\.com/data"
+      find: '"status":\s*"pending"'
+      replace: '"status": "completed"'
+
+  # Request body jq filter
+  - request_jq:
+      match: "^https://api\\.example\\.com/submit"
+      filter: '.data.timestamp = now |.data.version = "2.0"'
+
+  # Response body jq filter
+  - response_jq:
+      match: "^https://api\\.example\\.com/config"
+      filter: '.settings.theme = "dark"'
+```
+
+<!-- page: configuration/http_captures -->
+
+# HTTP captures
+
+> Capturing and exporting HTTP traffic.
+
+> Source: https://egernapp.com/docs/configuration/http_captures
+
+# HTTP Captures
+
+In Egern, the `http_captures` configuration allows you to define specific domain wildcard patterns whose HTTP requests and responses will be recorded by the application. This is particularly useful for debugging and inspecting HTTP interactions for specific domains. Glob wildcards are supported (e.g., `*.example.com`).
+tip
+Capturing HTTPS traffic requires configuring MITM and installing a CA certificate.
+
+## Configuration Details
+
+`http_captures` supports two formats:
+
+### Simple Format (String Array)
+
+Directly specify the list of hostnames to capture:
+
+```yaml
+http_captures:
+  - "*.example.com"
+  - "test.com"
+```
+
+### Structured Format (With Exclusions)
+
+You can specify both included and excluded hostnames:
+
+```yaml
+http_captures:
+  includes:
+    - "*.example.com"
+    - "test.com"
+  excludes:
+    - "*.internal.example.com"
+```
+
+Using the exclusion list allows you to exclude specific subdomains when capturing a broad range of domains.
+
+<!-- page: configuration/modules -->
+
+# Modules
+
+> Modules, remote module references and argument substitution.
+
+> Source: https://egernapp.com/docs/configuration/modules
+
+# Modules
+
+In Egern, modules are preset configuration snippets that allow users to conveniently enable or disable a specific set of network processing rules. Modules cover a wide range of functionality and can include rules, URL rewrites, header rewrites, body rewrites, Map Local, scripts, MITM, HTTP captures, and widgets. When a module is enabled, its configuration is merged into Egern's main configuration.
+
+## Module Reference Configuration
+
+Referencing modules in the main configuration file:
+
+- **name** (string), optional The display name of the module, overriding the name defined within the module file. When not set, the `name` field from the module file or the URL is used.
+- **url** (string), required The address of the module file, which can be a local file path or a remote URL.
+- **compat_arguments** (object), optional Arguments passed to the module, used to override the default argument values defined in the module file. Arguments are substituted as variables when the module is parsed. See Argument Substitution for the placeholder syntax and rules.
+- **env** (object), optional Environment variables (key-value pairs) passed to scripts and widgets in the module. Module-level env has the highest priority and overrides variables with the same key in widgets and scripts. See [Environment Variables](https://egernapp.com/docs/configuration/env) for details.
+- **update_interval** (integer), optional When the module file is a remote URL, this parameter specifies the update interval (in seconds) for the module. The default value is 86400 (24 hours).
+- **enabled** (boolean), optional Controls whether the module is enabled. The default value is `true`.
+
+### Configuration Example
+
+```yaml
+modules:
+  - name: "Ad Blocking"
+    url: "https://example.com/adblock.yaml"
+    enabled: true
+    update_interval: 86400
+  - url: "https://example.com/custom.yaml"
+    compat_arguments:
+      API_KEY: "your_api_key"
+      REGION: "cn"
+    env:
+      REFRESH_INTERVAL: "300"
+```
+
+## Module File Format
+
+A module file itself is a YAML-formatted file containing metadata and configuration content.
+
+### Metadata Fields
+
+- **name** (string), optional Module name.
+- **description** (string), optional Module description.
+- **author** (string), optional Module author.
+- **homepage** (string), optional Module homepage URL.
+- **manual** (string), optional Usage instructions URL.
+- **icon** (string), optional Module icon, supporting SF Symbols names or URLs.
+- **open_url** (string), optional URL to open the settings page.
+- **compat_arguments** (object), optional Default values for module arguments. See Argument Substitution for how to reference them with placeholders.
+- **compat_arguments_desc** (string), optional Documentation for module arguments.
+- **env_schema** (object), optional Declares the available environment variables for the module and their types. Egern will automatically generate corresponding UI controls on the module settings page. Keys are environment variable names, and values are descriptor objects with the following fields: ```yaml
+env_schema:
+  TITLE:
+    name: Title
+    description: The title text to display
+    default_value: "Default Title"
+  ENABLE_FEATURE:
+    name: Enable Feature
+    options:
+      - "true"
+      - "false"
+  THEME:
+    name: Theme
+    options:
+      - light
+      - dark
+      - auto
+```
+  - **name** (string), optional — Display name shown in the UI. Falls back to the key name if not set.
+  - **description** (string), optional — Descriptive text displayed below the control.
+  - **default_value** (string), optional — Default value, shown as placeholder text in the input field. Not written to env unless the user explicitly sets a value.
+  - **options** (array), optional — List of allowed values.
+    - `["true", "false"]` generates a Toggle switch.
+    - Other values generate a Picker.
+    - When not set, a TextField is generated.
+
+### Configuration Content Fields
+
+A module file can contain the following configuration items, which are merged with the main configuration:
+
+- **dns** (object), optional DNS configuration.
+- **rules** (array), optional Rule list.
+- **url_rewrites** (array), optional URL rewrite list.
+- **header_rewrites** (array), optional Header rewrite list.
+- **body_rewrites** (array), optional Body rewrite list.
+- **map_locals** (array), optional Map Local list.
+- **scriptings** (array), optional Script list.
+- **mitm** (object), optional MITM configuration.
+- **http_captures** (array), optional HTTP capture hostname list.
+- **widgets** (array), optional [Widget](https://egernapp.com/docs/configuration/widgets) list.
+- **bypass_tunnel_proxy** (array), optional List of domains that bypass the tunnel proxy.
+- **real_ip_domains** (array), optional List of domains that use real IP addresses (instead of Fake IP).
+
+### Configuration Example
+
+```yaml
+name: "Ad Blocking Module"
+description: "Filters common ads and trackers"
+author: "module-author"
+homepage: "https://github.com/example/adblock-module"
+icon: "shield.fill"
+
+compat_arguments:
+  BLOCK_MODE: "reject"
+
+rules:
+  - domain_suffix:
+      match: "ad.example.com"
+      policy: REJECT
+
+url_rewrites:
+  - match: "^https://ads\\.example\\.com"
+    location: "https://reject/"
+    status_code: 307
+
+mitm:
+  hostnames:
+    - "*.example.com"
+
+widgets:
+  - name: adblock-info
+```
+
+## Argument Substitution
+
+A module file can expose configurable arguments through `compat_arguments`, letting users customize the module without editing its source. The module file declares the arguments and their defaults and references them with placeholders; the module reference in the main configuration overrides the values. Substitution happens when the module is parsed.
+
+How it works:
+
+1. The **module file** declares each argument and its default value under `compat_arguments`, then references it elsewhere with the `{{{ARGUMENT_NAME}}}` placeholder.
+2. The **module reference** in the main configuration overrides an argument through its own `compat_arguments`.
+3. On load, every `{{{ARGUMENT_NAME}}}` placeholder is replaced with the user-provided value, falling back to the default declared in the module file.
+
+### Example
+
+Module file (`custom.yaml`):
+
+```yaml
+name: "Custom Module"
+compat_arguments:
+  REGION: "cn"            # default value
+  BLOCK_POLICY: "REJECT"
+  TIMEOUT: 30             # numeric default
+
+rules:
+  - domain_suffix:
+      match: "{{{REGION}}}.example.com"   # string field → quote the placeholder
+      policy: "{{{BLOCK_POLICY}}}"
+
+scriptings:
+  - http_request:
+      name: "Example"
+      match: "^https://example\\.com"
+      script_url: "https://example.com/s.js"
+      timeout: {{{TIMEOUT}}}              # numeric field → leave it unquoted
+```
+
+Module reference in the main configuration:
+
+```yaml
+modules:
+  - url: "https://example.com/custom.yaml"
+    compat_arguments:
+      REGION: "us"        # overrides the default
+      TIMEOUT: 60         # overrides the numeric default
+      # BLOCK_POLICY is not set, so it falls back to "REJECT"
+```
+
+After substitution the module is parsed as:
+
+```yaml
+rules:
+  - domain_suffix:
+      match: "us.example.com"
+      policy: "REJECT"
+
+scriptings:
+  - http_request:
+      name: "Example"
+      match: "^https://example\\.com"
+      script_url: "https://example.com/s.js"
+      timeout: 60          # parsed as a real number
+```
+
+### Rules and Limitations
+
+- **Declare every argument.** Only keys present in the module file's `compat_arguments` are substituted. A key supplied only in the reference but not declared in the module file is ignored.
+- **Quote a placeholder exactly as you would the literal value.** Substitution preserves your quoting, and YAML infers the type from it:
+  - **String** field — quote it: `match: "{{{REGION}}}.example.com"`, `name: "{{{LABEL}}}"`. Quoting keeps the result a string even when the value is all-digits or contains `:`.
+  - **Number** or **boolean** field — leave it unquoted: `timeout: {{{TIMEOUT}}}`, `enabled: {{{FLAG}}}`. The substituted value is then parsed as a real number or boolean.
+- **Avoid quote-breaking characters in string values.** A quoted placeholder is filled by plain text replacement inside the surrounding quotes, so a value containing a double quote (`"`), a backslash (`\`), or a newline breaks the quotes and yields invalid YAML. (A value containing `:` or `,` is fine.)
+
+<!-- page: configuration/env -->
+
+# Environment variables
+
+> Environment variables exposed to scripts and modules.
+
+> Source: https://egernapp.com/docs/configuration/env
+
+# Environment Variables
+
+Egern supports configuring environment variables (env) for scripts, widgets, and modules. Environment variables are passed as key-value pairs and can be accessed via `ctx.env` in scripts, allowing the same script to be flexibly configured for different scenarios without modifying the code.
+
+## Basic Usage
+
+### Defining in Scripts
+
+All five script types support the `env` field:
+
+```yaml
+scriptings:
+  - generic:
+      name: "my-script"
+      script_url: "https://example.com/scripts/my-script.js"
+      env:
+        API_KEY: "your_api_key"
+        API_URL: "https://api.example.com"
+  - http_request:
+      name: "modify-header"
+      match: "^https://api\\.example\\.com/"
+      script_url: "https://example.com/scripts/modify-header.js"
+      env:
+        TOKEN: "my-secret-token"
+  - schedule:
+      name: "daily-checkin"
+      cron: "0 8 * * *"
+      script_url: "https://example.com/scripts/checkin.js"
+      env:
+        USERNAME: "user123"
+```
+
+### Defining in Widgets
+
+```yaml
+widgets:
+  - name: "weather-widget"
+    env:
+      CITY: "Shanghai"
+      UNIT: "celsius"
+```
+
+### Defining in Module References
+
+```yaml
+modules:
+  - url: "https://example.com/module.yaml"
+    enabled: true
+    env:
+      API_KEY: "your_api_key"
+      REGION: "cn"
+```
+
+## Accessing in Scripts
+
+Environment variables are accessible in scripts via `ctx.env` as key-value pairs:
+
+```javascript
+export default async function(ctx) {
+  const apiKey = ctx.env.API_KEY;
+  const apiUrl = ctx.env.API_URL;
+
+  const resp = await ctx.http.get(apiUrl + '/data', {
+    headers: { 'Authorization': 'Bearer ' + apiKey }
+  });
+  const data = await resp.json();
+  console.log(data);
+}
+```
+
+## Priority and Merging
+
+When the same key exists at multiple levels, the priority from highest to lowest is:
+
+**Module > Widget > Script**
+
+Module-level env overrides widget-level variables with the same key, and widget-level env overrides script-level variables with the same key.
+
+### Merging Example
+
+Given the following configuration:
+
+```yaml
+scriptings:
+  - generic:
+      name: "my-widget"
+      script_url: "https://example.com/scripts/widget.js"
+      env:
+        COLOR: "blue"
+        TIMEOUT: "10"
+        MODE: "default"
+
+widgets:
+  - name: "my-widget"
+    env:
+      COLOR: "red"
+      REGION: "Asia"
+```
+
+The actual `ctx.env` received by the script will be:
+
+| Key | Value | Source |
+| --- | --- | --- |
+| COLOR | "red" | Widget (overrides script's "blue") |
+| TIMEOUT | "10" | Script |
+| MODE | "default" | Script |
+| REGION | "Asia" | Widget |
+
+If this widget comes from a module with env defined in the module reference:
+
+```yaml
+modules:
+  - url: "https://example.com/module.yaml"
+    env:
+      COLOR: "green"
+      LANG: "zh"
+```
+
+The final `ctx.env` will be:
+
+| Key | Value | Source |
+| --- | --- | --- |
+| COLOR | "green" | Module (highest priority) |
+| TIMEOUT | "10" | Script |
+| MODE | "default" | Script |
+| REGION | "Asia" | Widget |
+| LANG | "zh" | Module |
+
+## Use Cases
+
+- **API key management:** Store API keys in env so script files can be shared publicly without exposing secrets.
+- **Multi-instance reuse:** Use the same script with different env values to create multiple widgets, e.g., a single weather script displaying different cities.
+- **Module parameterization:** Module authors provide generic functionality; users pass personalized parameters via env.
+- **Environment differentiation:** Use env to distinguish between development/production API endpoints.
+
+```yaml
+# Same script, different env, displaying weather for different cities
+scriptings:
+  - generic:
+      name: "weather"
+      script_url: "https://example.com/scripts/weather.js"
+
+widgets:
+  - name: "weather-sh"
+    script_name: "weather"
+    env:
+      CITY: "Shanghai"
+  - name: "weather-bj"
+    script_name: "weather"
+    env:
+      CITY: "Beijing"
+```
+
+<!-- page: configuration/widgets -->
+
+# Widgets
+
+> Widget DSL for home screen widgets and script-driven panels.
+
+> Source: https://egernapp.com/docs/configuration/widgets
+
+# Widgets
+
+Egern supports iOS Widgets, allowing users to display custom content on the Home Screen and Lock Screen. Widgets are rendered from a JSON-based DSL description generated by JavaScript scripts.
+
+## Using Widgets from Modules
+
+The simplest way is to install a module that includes widgets — no coding required.
+
+### Steps
+
+1. Go to **Tools** → **Modules**, tap **+** in the top-right corner to add a module
+2. Enter the module URL and save
+3. Open the **Analytics** tab at the bottom, tap the top-left button to enter the **Widget Gallery** — widgets provided by the module will automatically appear in the "Module Widgets" section
+4. If the module requires parameters (e.g. API Key), go back to the module edit page and add the corresponding key-value pairs in the **Env** section
+
+### Adding to the iOS Home Screen
+
+1. Long-press an empty area on the Home Screen, tap **+** in the top-left corner
+2. Search for **Egern** and select a widget size
+3. After adding, long-press the widget → **Edit Widget**, then select the widget name to display
+
+## Building Your Own Widget
+
+To create your own widget, you first need a **generic type** script, then create a widget that references it.
+
+### 1. Create a Script
+
+Go to **Tools** → **Scripts**, tap **+**:
+
+| Field | Value |
+| --- | --- |
+| Name | e.g. my-widget |
+| Type | Select generic |
+| File Location | Select Local, enter a filename like my-widget.js |
+
+Tap **Edit File** and write the following minimal script:
+
+```javascript
+export default async function(ctx) {
+  return {
+    type: 'widget',
+    children: [
+      {
+        type: 'text',
+        text: 'Hello, Widget!',
+        font: { size: 'title2', weight: 'bold' },
+        textColor: '#FFFFFF',
+      },
+],
+    backgroundColor: '#2D6A4F',
+    padding: 16,
+  };
+}
+```
+
+Save the script.
+
+### 2. Create a Widget
+
+In the **Analytics** tab, tap the top-left button to enter the **Widget Gallery**, then tap **+**:
+
+| Field | Value |
+| --- | --- |
+| Name | e.g. My Widget |
+| Script Name | Select the my-widget script you just created |
+
+After saving, the widget will appear in the gallery and run automatically.
+
+## Widget Configuration
+
+Define widgets in the `widgets` field of the main configuration file:
+
+- **name** (string), required The widget name, must be unique.
+- **script_name** (string), optional The name of an associated generic script. Defaults to using a script with the same name as the widget.
+- **env** (object), optional Environment variables (key-value pairs) passed to the script. See [Environment Variables](https://egernapp.com/docs/configuration/env) for details.
+
+### Configuration Example
+
+```yaml
+scriptings:
+  - generic:
+      name: "weather-widget"
+      script_url: "https://example.com/scripts/weather.js"
+      timeout: 20
+  - generic:
+      name: "net-status-script"
+      script_url: "https://example.com/scripts/net-status.js"
+      timeout: 20
+
+widgets:
+  # name matches script name, no need to set script_name
+  - name: "weather-widget"
+    env:
+      CITY: "Shanghai"
+      UNIT: "celsius"
+  # name differs from script name, use script_name to specify the associated script
+  - name: "network-monitor"
+    script_name: "net-status-script"
+```
+
+## Widget DSL
+
+A widget script is a `generic` type script that returns a JSON-based DSL description via `return`. The DSL uses a tree structure composed of nested elements.
+
+### Script Context 
+
+The following properties are available on the `ctx` object during widget script execution:
+
+| Variable | Description |
+| --- | --- |
+| ctx.widgetFamily | Widget size family |
+| ctx.env | Environment variables as key-value pairs |
+
+**Widget Families:**
+
+| Value | Description |
+| --- | --- |
+| systemSmall | Home Screen small |
+| systemMedium | Home Screen medium |
+| systemLarge | Home Screen large |
+| systemExtraLarge | Home Screen extra large (iPad) |
+| accessoryCircular | Lock Screen circular |
+| accessoryRectangular | Lock Screen rectangular |
+| accessoryInline | Lock Screen inline |
+
+### Element Types (`type`)
+
+| Value | Description |
+| --- | --- |
+| widget | Root container, must be the outermost element. Uses vertical layout internally |
+| stack | Flex container, supports horizontal / vertical direction |
+| text | Text |
+| image | Image (SF Symbol, Base64 raster, or SVG) |
+| spacer | Flexible / fixed spacing |
+| date | Real-time date/time display (automatically updated by the system) |
+
+### Common Properties
+
+| Property | Type | Applies to | Description |
+| --- | --- | --- | --- |
+| url | string | widget, stack, text, image, date | URL to open on tap (deep link or web URL) |
+| opacity | number | text, image, date | Opacity, 0.0 – 1.0, default 1.0 |
+| width | number | stack, image | Element width, 0 or unset means no constraint |
+| height | number | stack, image | Element height, 0 or unset means no constraint |
+| flex | number | All elements | Flex ratio. Distributes remaining space proportionally among flex children in the parent container |
+| padding | number \| [top, right, bottom, left] | widget, stack | Inner padding. A single number applies equally to all sides; an array specifies each side in CSS clockwise order |
+| gap | number | widget, stack | Spacing between children, default 0 |
+| backgroundColor | Color | widget, stack | Background color |
+| backgroundGradient | Gradient | widget, stack | Background gradient, takes priority over backgroundColor |
+| backgroundImage | string | widget, stack | Background image data URI — Base64 raster or inline SVG ("data:image/svg+xml,..."); aspect-filled to cover the container, highest priority |
+| borderRadius | number \| "auto" | stack, image | Corner radius. Set to "auto" to automatically match the widget container's corner shape |
+| borderWidth | number | stack, image | Border width |
+| borderColor | Color | stack, image | Border color |
+| shadowColor | Color | text, image, date, stack | Shadow color |
+| shadowRadius | number | text, image, date, stack | Shadow blur radius (must be set for shadow to take effect) |
+| shadowOffset | Point | text, image, date, stack | Shadow offset {x, y}, default {0, 0} |
+
+### widget (Root Container)
+
+The root container defaults to **vertical layout**, with children arranged top-to-bottom and aligned to the top-left.
+
+| Property | Type | Description |
+| --- | --- | --- |
+| refreshAfter | string | ISO 8601 time indicating when the widget should refresh |
+
+```json
+{
+  "type": "widget",
+  "children": [...],
+  "gap": 8,
+  "padding": 16,
+  "backgroundColor": "#1A1A2E"
+}
+```
+
+### stack (Flex Container)
+
+| Property | Type | Values | Description |
+| --- | --- | --- | --- |
+| direction | string | "row", "column" | Layout direction, default "row" |
+| alignItems | string | See table below | Cross-axis alignment, default "center" |
+| children | [Element] | — | Array of child elements |
+
+**alignItems values:**
+
+| Value | Meaning in row stack | Meaning in column stack |
+| --- | --- | --- |
+| "start" | Children align to top | Children align to left |
+| "end" | Children align to bottom | Children align to right |
+| "center" | Children vertically centered | Children horizontally centered |
+
+```json
+{
+  "type": "stack",
+  "direction": "row",
+  "alignItems": "center",
+  "gap": 6,
+  "children": [
+    {"type": "text", "text": "CPU"},
+    {"type": "spacer"},
+    {"type": "text", "text": "42%"}
+]
+}
+```
+
+### text
+
+| Property | Type | Description |
+| --- | --- | --- |
+| text | string | Text content to display, supports \n for line breaks |
+| font | Font | Font configuration |
+| textColor | Color | Text color, defaults to the system primary color |
+| textAlign | string | Text alignment: "left" (default), "center", "right" |
+| maxLines | number | Maximum number of lines |
+| minScale | number | Minimum text scale factor (0.0 – 1.0), used for adaptive shrinking |
+
+```json
+{
+  "type": "text",
+  "text": "Hello, Widget!",
+  "font": {"size": "title2", "weight": "semibold"},
+  "textColor": "#FFFFFF",
+  "maxLines": 1,
+  "minScale": 0.5
+}
+```
+
+### image
+
+The `src` property specifies the image source, supporting three URI schemes:
+
+- **SF Symbol** — `sf-symbol:<name>`, e.g. `"sf-symbol:wifi"`
+- **Base64 raster** — `data:<mime>;base64,<data>`, e.g. `"data:image/png;base64,iVBORw0KGgo..."` (PNG, JPEG, etc.)
+- **SVG** — inline `data:image/svg+xml,<svg>...</svg>` or Base64 `data:image/svg+xml;base64,<data>`. Rendered as a vector, so it stays crisp at any size — ideal for charts, gauges, and icons.
+
+| Property | Type | Description |
+| --- | --- | --- |
+| src | string | Image source URI |
+| color | Color | SF Symbol tint color (only applies to SF Symbols) |
+| resizeMode | string | "contain" (default) or "cover" |
+| resizable | boolean | Whether resizable. Set to false to use original size, default true (auto-enabled when width/height are set) |
+
+> When `src` is not provided or the URI cannot be parsed, a placeholder icon will be displayed.
+
+```json
+{
+  "type": "image",
+  "src": "sf-symbol:wifi",
+  "width": 16,
+  "height": 16,
+  "color": "#FFFFFF"
+}
+```
+
+```json
+{
+  "type": "image",
+  "src": "data:image/png;base64,iVBORw0KGgo...",
+  "width": 40,
+  "height": 40,
+  "resizeMode": "cover",
+  "borderRadius": 8
+}
+```
+
+#### Inline SVG
+
+Inline SVG needs no Base64 encoding — put the markup straight after `data:image/svg+xml,`. Since the DSL is JSON, use **single quotes** for the SVG attributes so they don't clash with the surrounding double quotes:
+
+```json
+{
+  "type": "image",
+  "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 70'><polyline points='0,60 40,48 60,22 100,10 140,4' fill='none' stroke='rgb(74,222,128)' stroke-width='3' stroke-linejoin='round' stroke-linecap='round'/></svg>",
+  "width": 138,
+  "height": 66
+}
+```
+
+- Always include `xmlns='http://www.w3.org/2000/svg'` and a `viewBox` — the `viewBox` sets the intrinsic aspect ratio.
+- The SVG is rasterized to your `width` / `height` while preserving its aspect ratio; `resizeMode` (`"contain"` / `"cover"`) and `resizable` behave the same as for raster images.
+- The same `data:image/svg+xml,...` URI can be used as a `backgroundImage` on a `widget` or `stack`, where it is aspect-filled to cover the container.
+- The SVG source must be **512 KB or smaller**; oversized documents fall back to the placeholder icon.
+
+> Build the SVG string in your script from live data (paths, bars, arcs) to draw lightweight charts without bundling an image library.
+
+### spacer
+
+| Property | Type | Description |
+| --- | --- | --- |
+| length | number | Fixed length. When omitted, acts as a flexible spacer that fills remaining space |
+
+```json
+{"type": "spacer"}
+{"type": "spacer", "length": 10}
+```
+
+### date
+
+The system updates the date display in real time without requiring a widget refresh.
+
+| Property | Type | Description |
+| --- | --- | --- |
+| date | string | ISO 8601 date string, e.g. "2026-03-04T12:00:00Z" |
+| format | string | Display style, see table below. Default "date" |
+| font | Font | Font configuration |
+| textColor | Color | Text color |
+| textAlign | string | Text alignment: "left" (default), "center", "right" |
+| maxLines | number | Maximum number of lines |
+| minScale | number | Minimum scale factor |
+
+**format values:**
+
+| Value | Description | Example Output |
+| --- | --- | --- |
+| "date" | Date | March 4, 2026 |
+| "time" | Time | 12:00 PM |
+| "relative" | Relative time | 2 hours ago |
+| "offset" | Offset | +2 hours |
+| "timer" | Timer | 2:30:15 |
+
+```json
+{
+  "type": "date",
+  "date": "2026-03-04T12:00:00Z",
+  "format": "relative",
+  "font": {"size": "caption1", "weight": "medium"},
+  "textColor": "#FFFFFFDD"
+}
+```
+
+## Compound Type Definitions
+
+### Color
+
+Colors support two modes:
+
+**Fixed color** — use a string directly:
+
+```json
+"textColor": "#FF5733"
+"textColor": "#FF573380"
+"textColor": "rgba(255, 87, 51, 1.0)"
+```
+
+**Adaptive color** — automatically switches between light/dark mode:
+
+```json
+"textColor": {"light": "#000000", "dark": "#FFFFFF"}
+```
+
+**Supported color formats:**
+
+| Format | Example | Description |
+| --- | --- | --- |
+| 6-digit Hex | #RRGGBB | Opaque color |
+| 8-digit Hex | #RRGGBBAA | With alpha (last two digits) |
+| rgba() | rgba(R, G, B, A) | R/G/B: 0–255, A: 0.0–1.0 |
+
+### Font
+
+```json
+{"size": "headline", "weight": "bold"}
+{"size": 14, "weight": "bold"}
+{"size": 14, "weight": "bold", "family": "Menlo"}
+```
+
+All fields are optional. When omitted, defaults to `body` style.
+
+**size:** Supports semantic style names (`string`, dynamically scales with system font size) or exact numeric values (`number`).
+
+| Semantic Style | Default Size |
+| --- | --- |
+| "largeTitle" | 34 |
+| "title" | 28 |
+| "title2" | 22 |
+| "title3" | 20 |
+| "headline" | 17 |
+| "body" | 17 |
+| "callout" | 16 |
+| "subheadline" | 15 |
+| "footnote" | 13 |
+| "caption1" | 12 |
+| "caption2" | 11 |
+
+**weight:** `"ultraLight"`, `"thin"`, `"light"`, `"regular"`, `"medium"`, `"semibold"`, `"bold"`, `"heavy"`, `"black"`
+
+**family:** Custom font name (e.g. `"Menlo"`). When using `family`, you must also specify `size` to determine the font size.
+
+### Gradient
+
+```json
+{
+  "type": "linear",
+  "colors": ["#1A1A2E", "#16213E", "#0F3460"],
+  "stops": [0, 0.5, 1.0],
+  "startPoint": {"x": 0, "y": 0},
+  "endPoint": {"x": 1, "y": 1}
+}
+```
+
+**type:** `"linear"` (default), `"radial"`, `"angular"`
+
+**Common properties:**
+
+| Property | Type | Description |
+| --- | --- | --- |
+| colors | [Color] | Array of gradient colors (required) |
+| stops | [number] | Position of each color 0.0–1.0, count must match colors |
+
+**Linear-specific properties:**
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| startPoint | Point | {x: 0, y: 0} | Start point (top-left) |
+| endPoint | Point | {x: 1, y: 1} | End point (bottom-right) |
+
+**Radial-specific properties:**
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| center | Point | {x: 0.5, y: 0.5} | Center point |
+| startRadius | number | 0 | Start radius |
+| endRadius | number | 100 | End radius |
+
+**Angular-specific properties:**
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| center | Point | {x: 0.5, y: 0.5} | Center point |
+| startAngle | number | 0 | Start angle (degrees) |
+| endAngle | number | 360 | End angle (degrees) |
+
+### Point
+
+```json
+{"x": 0.5, "y": 0.5}
+```
+
+### flex (Flex Layout)
+
+When child elements have the `flex` property set, the parent container (`widget` or `stack`) distributes remaining space proportionally among those children. Children without `flex` retain their natural size.
+
+**Equal distribution (1:1):**
+
+```json
+{
+  "type": "stack",
+  "direction": "row",
+  "gap": 8,
+  "children": [
+    {"type": "text", "text": "Left", "flex": 1},
+    {"type": "text", "text": "Right", "flex": 1}
+]
+}
+```
+
+**Proportional layout (1:2):**
+
+```json
+{
+  "type": "stack",
+  "direction": "row",
+  "gap": 8,
+  "children": [
+    {"type": "text", "text": "Sidebar", "flex": 1},
+    {"type": "text", "text": "Content", "flex": 2}
+]
+}
+```
+
+**Fixed + flexible mix:**
+
+```json
+{
+  "type": "stack",
+  "direction": "row",
+  "gap": 8,
+  "children": [
+    {"type": "image", "src": "sf-symbol:star.fill", "width": 20, "height": 20},
+    {"type": "text", "text": "Fills remaining space", "flex": 1}
+]
+}
+```
+
+### Padding
+
+```json
+16
+[8, 12]
+[8, 12, 8, 12]
+```
+
+A single number applies equally to all sides; arrays support the following formats:
+
+| Elements | Format | Description |
+| --- | --- | --- |
+| 2 | [vertical, horizontal] | Top/bottom and left/right equal spacing |
+| 4 | [top, right, bottom, left] | CSS clockwise order |
+
+## Full Example
+
+### Configuration File
+
+```yaml
+scriptings:
+  - generic:
+      name: "server-status"
+      script_url: "https://example.com/scripts/server-status.js"
+      timeout: 20
+      env:
+        API_URL: "https://api.example.com/status"
+
+widgets:
+  - name: "server-status"
+    env:
+      REGION: "Asia"
+```
+
+### Widget Script
+
+```javascript
+export default async function(ctx) {
+  const apiUrl = ctx.env.API_URL;
+  const region = ctx.env.REGION;
+
+  let result;
+  try {
+    const resp = await ctx.http.get(apiUrl + '?region=' + region);
+    result = await resp.json();
+  } catch (e) {
+    return {
+      type: 'widget',
+      padding: 16,
+      children: [{
+        type: 'text',
+        text: 'Failed to load',
+        textColor: '#FF3B30'
+      }]
+    };
+  }
+
+  // Adjust layout based on widget family
+  if (ctx.widgetFamily === 'accessoryRectangular') {
+    return {
+      type: 'widget',
+      children: [{
+        type: 'text',
+        text: result.name + ': ' + result.status,
+        font: { size: 'headline', weight: 'semibold' }
+      }]
+    };
+  }
+
+  return {
+    type: 'widget',
+    backgroundGradient: {
+      type: 'linear',
+      colors: ['#1a1a2e', '#16213e'],
+      startPoint: { x: 0, y: 0 },
+      endPoint: { x: 1, y: 1 }
+    },
+    padding: 16,
+    children: [
+      {
+        type: 'stack',
+        direction: 'row',
+        alignItems: 'center',
+        gap: 8,
+        children: [
+          {
+            type: 'image',
+            src: 'sf-symbol:server.rack',
+            color: '#007AFF',
+            width: 20,
+            height: 20
+          },
+          {
+            type: 'text',
+            text: result.name,
+            font: { size: 'headline', weight: 'bold' },
+            textColor: '#FFFFFF'
+          }
+]
+      },
+      { type: 'spacer' },
+      {
+        type: 'stack',
+        direction: 'column',
+        gap: 4,
+        children: [
+          {
+            type: 'text',
+            text: 'Region: ' + region,
+            font: { size: 'subheadline' },
+            textColor: { light: '#666666', dark: '#AAAAAA' }
+          },
+          {
+            type: 'text',
+            text: 'Status: ' + result.status,
+            font: { size: 'subheadline', weight: 'semibold' },
+            textColor: result.status === 'OK'? '#34C759': '#FF3B30'
+          }
+]
+      },
+      {
+        type: 'date',
+        date: new Date().toISOString(),
+        format: 'relative',
+        font: { size: 'caption2' },
+        textColor: '#888888'
+      }
+]
+  };
+}
+```
+
+## Widgets in Modules
+
+Module files can also include a `widgets` field to define widgets. Widgets defined in a module become active when the module is enabled.
+
+```yaml
+name: "Network Monitor Module"
+description: "Display network status in widgets"
+author: "module-author"
+
+scriptings:
+  - generic:
+      name: "net-monitor"
+      script_url: "https://example.com/scripts/net-monitor.js"
+      timeout: 20
+
+widgets:
+  - name: "net-monitor"
+```
+
+When referencing modules in the main configuration, you can pass environment variables to the module's widgets via `env`:
+
+```yaml
+modules:
+  - url: "https://example.com/net-monitor.yaml"
+    enabled: true
+    env:
+      REFRESH_INTERVAL: "300"
+      ALERT_THRESHOLD: "90"
+```
+
+<!-- page: example/proxy -->
+
+# Proxy tutorial
+
+> Step-by-step setup of a proxy configuration.
+
+> Source: https://egernapp.com/docs/example/proxy
+
+# Egern as a Proxy Tool
+
+Egern can serve as a proxy tool to route network traffic. The following examples demonstrate how to add a proxy server and use a remote proxy subscription.
+
+## Using a Proxy Server
+
+### Adding a Shadowsocks Proxy Server
+
+Click `Tools` -> `Proxies` -> `+`, fill in `Name`, `Server`, `Port`, `Method`, and `Password`, then click Save.
+
+![Adding a Shadowsocks Proxy Server](https://egernapp.com/assets/images/02-proxy-01-05a2f13f0abc65f9cb7baf33af7bbbae.png)
+
+### Adding the Proxy Server to a Policy Group
+
+Click `Policy Groups` -> `Proxy` -> `ss` -> `Save`.
+
+![Adding the Proxy Server to a Policy Group](https://egernapp.com/assets/images/02-proxy-02-2ba6fc5aae16ec735732e568ab2ffa52.png)
+
+## Using a Remote Proxy Subscription URL
+
+### Changing Proxy to an External Policy Group
+
+Click `Policy Groups` -> `Proxy` -> `Type` -> `External` -> `Add New URL`, enter the remote proxy's URL address, and click `Save`.
+
+![Changing Proxy to an External Policy Group](https://egernapp.com/assets/images/02-proxy-03-91934057a6f3a10c594e806904876345.png)
+
+<!-- page: example/http-traffic-sniffer -->
+
+# HTTP sniffer tutorial
+
+> Step-by-step HTTPS interception setup with certificates.
+
+> Source: https://egernapp.com/docs/example/http-traffic-sniffer
+
+# Egern as HTTP traffic sniffer
+
+Egern is a tool that can be used to capture and analyze HTTP request and response data in network transmissions, which can help diagnose network application issues, monitor data transmission, and perform network security analysis.
+
+## Configure Root Certificate
+
+Tap `Tools` -> `Certificate` -> `Generate New Certificate` -> `Install Certificate`
+
+## Enable Global MITM
+
+Tap `All` -> `...` -> `Enable Global MITM`
+
+## Enable Global HTTP Captures
+
+Tap `All` -> `...` -> `Enable Global HTTP Captures`
