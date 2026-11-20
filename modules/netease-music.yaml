@@ -27,20 +27,96 @@ author: Keywos, 奶思, zirawell
 homepage: https://github.com/Yatfay/Egern
 icon: https://raw.githubusercontent.com/zirawell/R-Store/main/Res/Icon/App/163music.png
 
-# 底部标签与首页区块开关（默认与 fmz200 一致；true = 隐藏）
+# 底部标签与首页区块开关（默认与 fmz200 的 Loon [Argument] 一致；true = 隐藏）
+# Loon 写法：MY = switch,true,tag=[隐藏底部]漫游标签
+# Egern 对应做法：compat_arguments 用布尔值声明；env_schema 用 options ["true","false"] 生成开关
 compat_arguments:
-  MY: "true"
-  DT: "false"
-  FX: "true"
-  PRGG: "true"
-  PRRK: "false"
-  PRDRD: "false"
-  PRSCVPT: "false"
-  PRST: "false"
-  PRRR: "true"
-  HMPR: "false"
-  PRMST: "true"
-  PRCN: "true"
+  MY: true
+  DT: false
+  FX: true
+  PRGG: true
+  PRRK: false
+  PRDRD: false
+  PRSCVPT: false
+  PRST: false
+  PRRR: true
+  HMPR: false
+  PRMST: true
+  PRCN: true
+
+env_schema:
+  MY:
+    name: "[隐藏底部]漫游标签"
+    options:
+      - "true"
+      - "false"
+    default_value: "true"
+  DT:
+    name: "[隐藏底部]笔记标签"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+  FX:
+    name: "[隐藏底部]发现标签"
+    options:
+      - "true"
+      - "false"
+    default_value: "true"
+  PRGG:
+    name: "[隐藏首页]问候语"
+    options:
+      - "true"
+      - "false"
+    default_value: "true"
+  PRRK:
+    name: "[隐藏首页]排行榜"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+  PRDRD:
+    name: "[隐藏首页]每日推荐"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+  PRSCVPT:
+    name: "[隐藏首页]推荐歌单"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+  PRST:
+    name: "[隐藏首页]最近常听"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+  PRRR:
+    name: "[隐藏首页]雷达歌单"
+    options:
+      - "true"
+      - "false"
+    default_value: "true"
+  HMPR:
+    name: "[隐藏首页]音乐合伙人"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+  PRMST:
+    name: "[隐藏首页]推荐专属歌单"
+    options:
+      - "true"
+      - "false"
+    default_value: "true"
+  PRCN:
+    name: "[隐藏首页]你的专属歌单"
+    options:
+      - "true"
+      - "false"
+    default_value: "true"
 
 rules:
   - domain:
