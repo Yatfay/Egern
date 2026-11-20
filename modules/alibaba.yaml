@@ -25,105 +25,152 @@ icon: https://raw.githubusercontent.com/zirawell/R-Store/main/Res/Icon/App/taoba
 
 rules:
   # ---- 淘宝 / 天猫：广告与统计域（fmz200 + R-Store 合并去重）----
-  - domain_suffix: apoll.m.taobao.com
-    policy: REJECT
-  - domain_suffix: h-adashx.ut.taobao.com
-    policy: REJECT
-  - domain_suffix: w.m.taobao.com
-    policy: REJECT
-  - domain_suffix: re.m.taobao.com
-    policy: REJECT
-  - domain_suffix: agoodm.m.taobao.com
-    policy: REJECT
-  - domain_suffix: ai.taobao.com
-    policy: REJECT
-  - domain_suffix: api.waptest.taobao.com
-    policy: REJECT
-  - domain_suffix: dsp.simba.taobao.com
-    policy: REJECT
-  - domain_suffix: fav.simba.taobao.com
-    policy: REJECT
-  - domain_suffix: m.simba.taobao.com
-    policy: REJECT
-  - domain_suffix: mclick.simba.taobao.com
-    policy: REJECT
-  - domain_suffix: re.taobao.com
-    policy: REJECT
-  - domain_suffix: redirect.simba.taobao.com
-    policy: REJECT
-  - domain_suffix: simba.m.taobao.com
-    policy: REJECT
-  - domain_suffix: srd.simba.taobao.com
-    policy: REJECT
-  - domain_suffix: temai.taobao.com
-    policy: REJECT
-  - domain_suffix: textlink.simba.taobao.com
-    policy: REJECT
-  - domain_suffix: unitacs.m.taobao.com
-    policy: REJECT
-  - domain_suffix: acs4baichuan.m.taobao.com
-    policy: REJECT
-  - domain_suffix: adashbc.ut.taobao.com
-    policy: REJECT
-  - domain_suffix: adash-c.ut.taobao.com
-    policy: REJECT
-  - domain_suffix: adashxgc.ut.taobao.com
-    policy: REJECT
-  - domain_suffix: adashx4yt.m.taobao.com
-    policy: REJECT
-  - domain_suffix: tunion-api.m.taobao.com
-    policy: REJECT
-  - domain_suffix: tns.simba.taobao.com
-    policy: REJECT
-  - domain_suffix: click.mz.simba.taobao.com
-    policy: REJECT
-  - domain_suffix: click.simba.taobao.com
-    policy: REJECT
-  - domain_suffix: click.tz.simba.taobao.com
-    policy: REJECT
-  - domain_suffix: stat.simba.taobao.com
-    policy: REJECT
-  - domain_suffix: m-adash.m.taobao.com
-    policy: REJECT
-  - domain_suffix: adashbc.m.taobao.com
-    policy: REJECT
-  - domain_suffix: ut.taobao.com
-    policy: REJECT
+  - domain_suffix:
+      match: apoll.m.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: h-adashx.ut.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: w.m.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: re.m.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: agoodm.m.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: ai.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: api.waptest.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: dsp.simba.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: fav.simba.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: m.simba.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: mclick.simba.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: re.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: redirect.simba.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: simba.m.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: srd.simba.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: temai.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: textlink.simba.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: unitacs.m.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: acs4baichuan.m.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: adashbc.ut.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: adash-c.ut.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: adashxgc.ut.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: adashx4yt.m.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: tunion-api.m.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: tns.simba.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: click.mz.simba.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: click.simba.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: click.tz.simba.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: stat.simba.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: m-adash.m.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: adashbc.m.taobao.com
+      policy: REJECT
+  - domain_suffix:
+      match: ut.taobao.com
+      policy: REJECT
   # ---- 闲鱼 ----
-  - domain_keyword: iyes.youku.com
-    policy: REJECT
+  - domain_keyword:
+      match: iyes.youku.com
+      policy: REJECT
   # 闲鱼 amdc 分发接口：仅当 User-Agent 为闲鱼时拦截（fmz200 XianYu.sgmodule）
   - and:
       match:
-        - url_regex: '^http://.+\/amdc\/mobileDispatch'
-        - user_agent: '*闲鱼*'
-    policy: REJECT
+        - url_regex:
+            match: '^http://.+\/amdc\/mobileDispatch'
+        - user_agent:
+            match: '*闲鱼*'
+      policy: REJECT
   # ---- 支付宝：广告与统计域 ----
-  - domain: adgw.alipay.com
-    policy: REJECT
-  - domain: amdc.alipay.com
-    policy: REJECT
-  - domain: rtms.alipay.com
-    policy: REJECT
-  - domain: amdc-sibling.alipay.com.cn
-    policy: REJECT
-  - domain: mobiledc.stable.alipay.net
-    policy: REJECT
-  - domain_suffix: mdap.alipay.com
-    policy: REJECT
-  - domain_suffix: ynuf.alipay.com
-    policy: REJECT
-  - domain_keyword: loggw.alipay.com
-    policy: REJECT
+  - domain:
+      match: adgw.alipay.com
+      policy: REJECT
+  - domain:
+      match: amdc.alipay.com
+      policy: REJECT
+  - domain:
+      match: rtms.alipay.com
+      policy: REJECT
+  - domain:
+      match: amdc-sibling.alipay.com.cn
+      policy: REJECT
+  - domain:
+      match: mobiledc.stable.alipay.net
+      policy: REJECT
+  - domain_suffix:
+      match: mdap.alipay.com
+      policy: REJECT
+  - domain_suffix:
+      match: ynuf.alipay.com
+      policy: REJECT
+  - domain_keyword:
+      match: loggw.alipay.com
+      policy: REJECT
   # ---- 支付宝小程序：哈啰出行广告域 ----
-  - domain: abapi.hellobike.com
-    policy: REJECT
-  - domain: apmgw.hellobike.com
-    policy: REJECT
-  - domain: cdn.hellobike.com
-    policy: REJECT
-  - domain: ip.hellobike.com
-    policy: REJECT
+  - domain:
+      match: abapi.hellobike.com
+      policy: REJECT
+  - domain:
+      match: apmgw.hellobike.com
+      policy: REJECT
+  - domain:
+      match: cdn.hellobike.com
+      policy: REJECT
+  - domain:
+      match: ip.hellobike.com
+      policy: REJECT
 
 url_rewrites:
   # ---- 淘宝 / 天猫：开屏与广告配置接口 ----
