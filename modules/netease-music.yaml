@@ -1,0 +1,130 @@
+# 网易云音乐去广告
+# 合并来源（各取最新）：
+# - fmz200/wool_scripts@2026-11-11（Surge/Loon/QX/Stash，作者 奶思；脚本出自 Keywos）
+# - zirawell/R-Store@2026-05-09（Surge/QX，作者 zirawell；脚本为 Keywos wyres.js 的转载）
+# - Keywos/rule（脚本 wyres.js 原作者 Keywos）
+# - ifflagged/Romeo 仅为 zirawell 的镜像，无新内容，未采用
+# - chavyleung/scripts 的网易云音乐条目是每日签到 cron，与去广告无关，未采用
+# - I-am-R-E/Functional-Store-Hub 的 NeteaseMusic 目录是解锁节点与 VIP 检测，与去广告无关，未采用
+# 冲突处理：
+# - 同一意图在不同客户端有多种写法（map-local / reject-dict / Loon reject_dict）时，取更具体的 map-local（置空 JSON + 200 状态 + Content-Type）
+# - fmz200 与 zirawell 的脚本实为同一份 Keywos wyres.js，合并为一份 Egern 原生脚本（scripts/netease-music.js）
+# - zirawell 用 DOMAIN-SUFFIX 的两处（iadmusicmat.music.126.net、httpdns.music.163.com）按较新的 fmz200 取 DOMAIN
+# - zirawell 的 ipv4/ipv6.music.163.com 全站 REJECT 未采用：那是 App 的 API 域名，整站拒绝有断网风险，该域名上的广告接口已由 map-local 与脚本覆盖
+# 剔除（原脚本有、此处不要）：
+# - 伪 VIP 解锁（oe()、vip/info、新账号页伪造等级）：属于解锁，不属于去广告；fmz200 的 Loon 版也已将其注释掉
+# - “显示未关注你”（user/follow/users/mixed/get）：伪造“对方关注你”的提示语，非广告
+# - song/play/more/list/v2：较新的 fmz200 已将其注释停用，zirawell 独有，弃用
+# - map-local 中的 music-vip-membership/client/vip/info：那是会员状态数据接口，置空可能导致已开通会员的标识异常；VIP 弹窗本身由同组其余三条覆盖
+# - 原脚本 "api/ad/get" 分支：正则里缺了前导斜杠，实际永远匹配不到，是死代码；/batch 内已处理 /api/ad/get
+# 说明：
+# - eapi 响应是 AES-128-ECB 加密的，response_jq 看不到明文，因此保留一个原生脚本做解密—改 JSON—再加密；
+#   脚本内含精简 AES 实现，已用平台加密算法对照验证（见仓库外测试记录）
+# - weapi 链接原脚本同样处理不了（其 URL 正则只认 e?api），故脚本匹配只写 e?api；map-local 不受此限，仍覆盖 weapi
+name: 网易云音乐去广告
+description: 去除开屏、信息流、推荐页与评论区广告及推广位，净化首页、发现页与播放页；需清除缓存或重装 App 才生效。
+author: Keywos, 奶思, zirawell
+homepage: https://github.com/Yatfay/Egern
+icon: https://raw.githubusercontent.com/zirawell/R-Store/main/Res/Icon/App/163music.png
+
+# 底部标签与首页区块开关（默认与 fmz200 一致；true = 隐藏）
+compat_arguments:
+  MY: "true"
+  DT: "false"
+  FX: "true"
+  PRGG: "true"
+  PRRK: "false"
+  PRDRD: "false"
+  PRSCVPT: "false"
+  PRST: "false"
+  PRRR: "true"
+  HMPR: "false"
+  PRMST: "true"
+  PRCN: "true"
+
+rules:
+  - domain:
+      match: iadmusicmat.music.126.net
+      policy: REJECT
+  - domain:
+      match: iadmat.nosdn.127.net
+      policy: REJECT
+  - domain:
+      match: iadmatapk.nosdn.127.net
+      policy: REJECT
+  - domain:
+      match: httpdns.n.netease.com
+      policy: REJECT
+  - domain:
+      match: httpdns.music.163.com
+      policy: REJECT
+  - domain:
+      match: admusicpic.music.126.net
+      policy: REJECT
+  - domain_suffix:
+      match: 163jiasu.com
+      policy: REJECT
+  - domain_suffix:
+      match: iadmusicmatvideo.music.126.net
+      policy: REJECT
+
+map_locals:
+  # 开屏 / 广告 / AB 测试 / 商城 / 日志接口
+  - match: "^https?://(ipv4|interface\\d?)\\.music\\.163\\.com/w?e?api/(ad|abtest|store|mlog)"
+    status_code: 200
+    headers: {Content-Type: application/json}
+    body: '{}'
+  # 今日运势 / 商城 / Beat 专区 / 音乐收藏家
+  - match: "^https?://interface\\d?\\.music\\.163\\.com/w?e?api/(side-bar/mini-program/music-service/account|delivery/(batch-deliver|deliver)|moment/tab/info/get|yunbei/account/entrance/get)"
+    status_code: 200
+    headers: {Content-Type: application/json}
+    body: '{}'
+  # 播放页歌名下方：乐迷团 / 关注 / 播放提示 / 音乐应用红点 / 播放页提示
+  - match: "^https?://interface\\d?\\.music\\.163\\.com/w?e?api/(resource/comments?/musiciansaid|community/friends/fans-group/artist/group/get|user/sub/artist|music/songshare/text/recommend/get|mine/applet/redpoint|resniche/position/play/new/get)"
+    status_code: 200
+    headers: {Content-Type: application/json}
+    body: '{}'
+  # 搜索页热搜卡片 / 猜你喜欢 / 我的应用下方提醒
+  - match: "^https?://interface\\d?\\.music\\.163\\.com/w?e?api/(search/(chart|default|rcmd/keyword|specialkeyword)|resource-exposure/|middle/clientcfg/config|activity/bonus/playpage/time/query)"
+    status_code: 200
+    headers: {Content-Type: application/json}
+    body: '{}'
+  # 评论区插入推广 / 热评收藏 / 提示 / 直播入口 / 位置策略 / 版本 / 评论横幅
+  - match: "^https?://interface\\d?\\.music\\.163\\.com/w?e?api/(comment/(feed/inserted)|hotcomment/collect|tips/v\\d/get|mlivestream/entrance/playpage|link/(position/show/strategy|scene/show)|ios/version|v\\d/content/exposure/comment/banner)"
+    status_code: 200
+    headers: {Content-Type: application/json}
+    body: '{}'
+  # VIP 弹窗 / 鉴权提示 / 歌曲播放专区入口
+  - match: "^https?://interface\\d?\\.music\\.163\\.com/w?e?api/(vipcenter/tspopup/get|vipauth/app/auth|zone/songplay/entry/get)"
+    status_code: 200
+    headers: {Content-Type: application/json}
+    body: '{}'
+
+scriptings:
+  - http_response:
+      name: 网易云音乐去广告
+      match: "^https?://(ipv4|interface\\d?)\\.music\\.163\\.com/e?api/(batch|v\\d/resource/comment/floor/get|link/home/framework/tab|homepage/block/page|link/page/rcmd/(resource/show|block/resource/multi/refresh)|link/page/discovery/resource/show|link/position/show/resource)"
+      script_url: "https://raw.githubusercontent.com/Yatfay/Egern/main/scripts/netease-music.js"
+      body_required: true
+      binary_body: true
+      timeout: 20
+      env:
+        MY: "{{{MY}}}"
+        DT: "{{{DT}}}"
+        FX: "{{{FX}}}"
+        PRGG: "{{{PRGG}}}"
+        PRRK: "{{{PRRK}}}"
+        PRDRD: "{{{PRDRD}}}"
+        PRSCVPT: "{{{PRSCVPT}}}"
+        PRST: "{{{PRST}}}"
+        PRRR: "{{{PRRR}}}"
+        HMPR: "{{{HMPR}}}"
+        PRMST: "{{{PRMST}}}"
+        PRCN: "{{{PRCN}}}"
+
+mitm:
+  hostnames:
+    - interface.music.163.com
+    - interface3.music.163.com
+    - interface9.music.163.com
+    - ipv4.music.163.com

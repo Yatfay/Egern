@@ -1,0 +1,509 @@
+# 阿里系去广告
+# ============
+# 淘宝 / 天猫 / 支付宝 / 闲鱼 去广告与净化
+#
+# 来源（合并细节、冲突裁决、舍弃项见同目录 alibaba.report.md）：
+#   - fmz200/wool_scripts：Alibaba.sgmodule、Taobao.sgmodule、XianYu.sgmodule、
+#     myBlockAds.js、xianyu_ads.js、eleme.js、alipayAdBlock（小程序合集）
+#   - zirawell/R-Store：taobao.sgmodule、goofish.sgmodule、alipay.sgmodule、
+#     taobao.js、goofish.js、eleme.js
+#   - ishowshu/qx：goofish.js（2026-10-24，闲鱼最新最全脚本）
+#   - I-am-R-E/Functional-Store-Hub：无上述四款应用的原生 Egern 模块
+#
+# 天猫说明：未找到天猫专属去广告规则；天猫与淘宝共用 mtop 网关
+# （acs.m.taobao.com / guide-acs.m.taobao.com）与阿里妈妈广告域，
+# 本模块的淘宝规则同样覆盖天猫。
+#
+# 注意：部分规则（开屏、首页信息流）需清缓存或重装 App 才生效；
+# 闲鱼首页过滤较激进（只保留 cardTypeValue == "Item" 的卡片）。
+
+name: 阿里系去广告
+description: 淘宝 / 天猫 / 支付宝 / 闲鱼去广告与净化；部分规则需清缓存或重装 App 才生效
+author: 奶思, zirawell, 树先生
+homepage: https://github.com/Yatfay/Egern
+icon: https://raw.githubusercontent.com/zirawell/R-Store/main/Res/Icon/App/taobao.png
+
+rules:
+  # ---- 淘宝 / 天猫：广告与统计域（fmz200 + R-Store 合并去重）----
+  - domain_suffix: apoll.m.taobao.com
+    policy: REJECT
+  - domain_suffix: h-adashx.ut.taobao.com
+    policy: REJECT
+  - domain_suffix: w.m.taobao.com
+    policy: REJECT
+  - domain_suffix: re.m.taobao.com
+    policy: REJECT
+  - domain_suffix: agoodm.m.taobao.com
+    policy: REJECT
+  - domain_suffix: ai.taobao.com
+    policy: REJECT
+  - domain_suffix: api.waptest.taobao.com
+    policy: REJECT
+  - domain_suffix: dsp.simba.taobao.com
+    policy: REJECT
+  - domain_suffix: fav.simba.taobao.com
+    policy: REJECT
+  - domain_suffix: m.simba.taobao.com
+    policy: REJECT
+  - domain_suffix: mclick.simba.taobao.com
+    policy: REJECT
+  - domain_suffix: re.taobao.com
+    policy: REJECT
+  - domain_suffix: redirect.simba.taobao.com
+    policy: REJECT
+  - domain_suffix: simba.m.taobao.com
+    policy: REJECT
+  - domain_suffix: srd.simba.taobao.com
+    policy: REJECT
+  - domain_suffix: temai.taobao.com
+    policy: REJECT
+  - domain_suffix: textlink.simba.taobao.com
+    policy: REJECT
+  - domain_suffix: unitacs.m.taobao.com
+    policy: REJECT
+  - domain_suffix: acs4baichuan.m.taobao.com
+    policy: REJECT
+  - domain_suffix: adashbc.ut.taobao.com
+    policy: REJECT
+  - domain_suffix: adash-c.ut.taobao.com
+    policy: REJECT
+  - domain_suffix: adashxgc.ut.taobao.com
+    policy: REJECT
+  - domain_suffix: adashx4yt.m.taobao.com
+    policy: REJECT
+  - domain_suffix: tunion-api.m.taobao.com
+    policy: REJECT
+  - domain_suffix: tns.simba.taobao.com
+    policy: REJECT
+  - domain_suffix: click.mz.simba.taobao.com
+    policy: REJECT
+  - domain_suffix: click.simba.taobao.com
+    policy: REJECT
+  - domain_suffix: click.tz.simba.taobao.com
+    policy: REJECT
+  - domain_suffix: stat.simba.taobao.com
+    policy: REJECT
+  - domain_suffix: m-adash.m.taobao.com
+    policy: REJECT
+  - domain_suffix: adashbc.m.taobao.com
+    policy: REJECT
+  - domain_suffix: ut.taobao.com
+    policy: REJECT
+  # ---- 闲鱼 ----
+  - domain_keyword: iyes.youku.com
+    policy: REJECT
+  # 闲鱼 amdc 分发接口：仅当 User-Agent 为闲鱼时拦截（fmz200 XianYu.sgmodule）
+  - and:
+      match:
+        - url_regex: '^http://.+\/amdc\/mobileDispatch'
+        - user_agent: '*闲鱼*'
+    policy: REJECT
+  # ---- 支付宝：广告与统计域 ----
+  - domain: adgw.alipay.com
+    policy: REJECT
+  - domain: amdc.alipay.com
+    policy: REJECT
+  - domain: rtms.alipay.com
+    policy: REJECT
+  - domain: amdc-sibling.alipay.com.cn
+    policy: REJECT
+  - domain: mobiledc.stable.alipay.net
+    policy: REJECT
+  - domain_suffix: mdap.alipay.com
+    policy: REJECT
+  - domain_suffix: ynuf.alipay.com
+    policy: REJECT
+  - domain_keyword: loggw.alipay.com
+    policy: REJECT
+  # ---- 支付宝小程序：哈啰出行广告域 ----
+  - domain: abapi.hellobike.com
+    policy: REJECT
+  - domain: apmgw.hellobike.com
+    policy: REJECT
+  - domain: cdn.hellobike.com
+    policy: REJECT
+  - domain: ip.hellobike.com
+    policy: REJECT
+
+url_rewrites:
+  # ---- 淘宝 / 天猫：开屏与广告配置接口 ----
+  # 冲突裁决：fmz200 用 map-local（2026-11-11），R-Store 用 reject（2026-05-09）；
+  # 开屏类接口按 fail-closed 取 reject（详见 alibaba.report.md）
+  - match: '^https?:\/\/acs\.m\.taobao\.com\/gw\/mtop\.etao\.noah\.query\/.+tao_splash'
+    location: http://reject/
+  - match: '^https?:\/\/acs\.m\.taobao\.com\/gw\/mtop\.alimama\.etao\.config\.query\/.+?etao_advertise'
+    location: http://reject/
+  # ---- 闲鱼 ----
+  - match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.playboy\.recommend\/1\.0'
+    location: http://reject/
+  - match: '^https?:\/\/h5\.m\.goofish\.com\/app\/idleFish-F2e\/idlefish-pop'
+    location: http://reject/
+  - match: '^https?:\/\/dinamicx\.alibabausercontent\.com\/pub\/fish_home_top_kingkong_new\/'
+    location: http://reject/
+  - match: '^https?:\/\/g\.alicdn\.com\/IdleFish-F2e\/idlefish-workers\/[0-9.]+\/smartLoader'
+    location: http://reject/
+  # ---- 支付宝小程序：哈啰 / 饿了么 ----
+  - match: '^https?:\/\/api\.hellobike\.com\/api\?msg\.toast\.user'
+    location: http://reject/
+  - match: '^https?:\/\/api\.hellobike\.com\/api\?homepage\.shortcut\.scene\.perception'
+    location: http://reject/
+  - match: '^https?:\/\/api\.hellobike\.com\/api\?homepage\.module\.newAlipay'
+    location: http://reject/
+  - match: '^https?:\/\/api\.hellobike\.com\/api\?bottom\.aggregation\.tab\.info'
+    location: http://reject/
+  - match: '^https?:\/\/api\.hellobike\.com\/api\?homepage\.recommend\.popUp'
+    location: http://reject/
+  - match: '^https?:\/\/waimai-guide\.ele\.me\/h5\/mtop\.alsc\.interact\.content\.homepage\.float'
+    location: http://reject/
+  - match: '^https?:\/\/waimai-guide\.ele\.me\/(gw|h5)\/mtop\.alsc\.eleme\.trigger\.respond'
+    location: http://reject/
+  # 阿里妈妈 180x180 占位图：map-local 无法表达二进制小图，改用 reject-img
+  - match: '^https?:\/\/mdn\.alicdn\.com\/imgextra\/i1\/.*-tps-180-180\.gif$'
+    location: http://reject-img/
+
+body_rewrites:
+  # ================= 淘宝 =================
+  # 云视频广告：时长归零、资源与缓存清空、响应时间推到 2090 年
+  - response_jq:
+      match: '^https?:\/\/guide-acs\.m\.taobao\.com\/gw\/mtop\.taobao\.cloudvideo\.video\.query'
+      filter: >-
+        .data.duration = "0" | .data.resources = [] | .data.caches = [] | .data.respTimeInMs = "3818332800000"
+  # 开屏广告：把 taobao-splash 的投放时间窗推到 2090 年并清空图片/视频
+  - response_jq:
+      match: '^https?:\/\/guide-acs\.m\.taobao\.com\/gw\/mtop\.taobao\.wireless\.home\.splash\.awesome\.get'
+      filter: >-
+        if .data.containers.splash_home_base.base.sections then
+          .data.containers.splash_home_base.base.sections |= map(
+            if (.bizData // {}) | has("taobao-splash") then
+              if (.bizData["taobao-splash"].data | type) == "array" then
+                .bizData["taobao-splash"].data |= map(
+                  .waitTime = "0" | .times = "0" | .hotStart = "false" | .haveVoice = "false"
+                  | .hideTBLogo = "false" | .enable4G = "false" | .coldStart = "false"
+                  | .startTime = "3818332800000" | .endTime = "3818419199000"
+                  | .gmtStart = "2090-12-31 00:00:00" | .gmtEnd = "2090-12-31 23:59:59"
+                  | .gmtStartMs = "3818332800000" | .gmtEndMs = "3818419199000"
+                  | .imgUrl = "" | .videoUrl = ""
+                )
+              else . end
+            else . end
+          )
+        else . end
+  # 弹窗模板：清空图片/视频并禁用
+  - response_jq:
+      match: '^https?:\/\/poplayer\.template\.alibaba\.com\/\w+\.json'
+      filter: >-
+        .res.images = [] | .res.videos = [] | .enable = false | .mainRes.images = []
+  # ================= 闲鱼 =================
+  # 首页信息流：只保留 cardTypeValue == "Item" 的卡片（最激进的过滤）
+  - response_jq:
+      match: '^https?:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlehome\.home\.nextfresh\/'
+      filter: >-
+        del(.data.widgetReturnDO, .data.bannerReturnDO)
+        | if .data then
+            .data.homeTopList = []
+            | if .data.sections then
+                .data.sections |= map(select(
+                  (.data.bizType != "AD" and .data.bizType != "homepage")
+                  and (.template.name != "fish_home_yunying_card_d3"
+                    and .template.name != "idlefish_seafood_market"
+                    and .template.name != "fish_home_chat_room")
+                  and .data.cardTypeValue == "Item"
+                ))
+              else . end
+          else . end
+  # 同城首页：过滤广告卡片
+  - response_jq:
+      match: '^https?:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.local\.home\/'
+      filter: >-
+        if .data.sections then
+          .data.sections |= map(select(.data.bizType != "AD"))
+        else . end
+  # 首页鲸鱼模块：整体移除
+  - response_jq:
+      match: '^https?:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.home\.whale\.modulet\/'
+      filter: >-
+        del(.data.container.sections)
+  # 我的页：只保留第 0、1、3 个模块，清空 ability
+  - response_jq:
+      match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.idle\.user\.page\.my\.adapter\/'
+      filter: >-
+        if .data.container.sections then
+          .data.container.sections |= map(select(.index == "0" or .index == "1" or .index == "3"))
+        else . end
+        | if .data then .data.ability = [] else . end
+  # 鱼塘列表：只保留 circleId 1、2；头部只保留 main / recycle，recycle 的右标清空
+  - response_jq:
+      match: '^https?:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlehome\.home\.circle\.list\/1\.0'
+      filter: >-
+        if .data.circleList then
+          .data.circleList |= map(select(.circleId == "1" or .circleId == "2"))
+        else . end
+        | if .data.next.headList then
+            .data.next.headList |= map(select(.bizCode == "main" or .bizCode == "recycle")
+              | if .bizCode == "recycle" then .showInfo.rightTagImage = {} else . end)
+          else . end
+        | if .data.headList then
+            .data.headList |= map(select(.bizCode == "main" or .bizCode == "recycle")
+              | if .bizCode == "recycle" then .showInfo.rightTagImage = {} else . end)
+          else . end
+  # 搜索页：过滤阿里妈妈广告与运营卡片，删除顶部横条与 topList
+  - response_jq:
+      match: '^https?:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopsearch\.search\/'
+      filter: >-
+        if .data.resultList then
+          .data.resultList |= map(select(
+            (.data.item.main.exContent.isAliMaMaAD as $ad | ($ad != true and $ad != "true"))
+            and .data.template.name != "idlefish_search_card_category_select"
+            and .data.template.name != "idlefish_search_spu_market_publish"
+          ))
+        else . end
+        | del(.data.resultPrefixBar)
+        | if .data then .data.topList = [] else . end
+  # 我的鱼塘横幅：清空
+  - response_jq:
+      match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.group\.myself\.banner\/'
+      filter: >-
+        .data.bannerList = []
+  # 玩转推荐 2.0：清空推荐与 next
+  - response_jq:
+      match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.playboy\.recommend\/2\.0'
+      filter: >-
+        .data.recommends = [] | .data.items = [] | .data.next = false
+  # 商品推荐列表：清空
+  - response_jq:
+      match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.item\.recommend\.list\/'
+      filter: >-
+        .data.cardList = []
+  # 附近商品详情入口：清空跳转与名称描述
+  - response_jq:
+      match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.local\.nearby\.itemdetail\.enter\/1\.0'
+      filter: >-
+        .data.targetUrl = "" | .data.trackParams.itemIds = "" | .data.nearbyItemInfoList = []
+        | .data.name = "" | .data.desc = "" | .data.poiName = ""
+  # 消息会话同步：移除 sessionType 25 的会话
+  - response_jq:
+      match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemessage\.session\.sync\/3\.0'
+      filter: >-
+        if .data.sessions then
+          .data.sessions |= map(select(.session.sessionType != "25"))
+        else . end
+  # 关注动态：只保留 cardType 9999，清空副标题
+  - response_jq:
+      match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.fun\.follow\.feed\.list'
+      filter: >-
+        if .data.sections then
+          .data.sections |= map(select(.cardType == 9999)
+            | if .cardData.subText then .cardData.subText = "" else . end)
+        else . end
+  # 常逛鱼塘：清空
+  - response_jq:
+      match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.fun\.follow\.often\.visit'
+      filter: >-
+        .data.sections = []
+  # 鱼塘我的页横幅：清空
+  - response_jq:
+      match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.circle\.myself\.banner\/1\.0'
+      filter: >-
+        .data.bannerList = []
+  # 逛过的鱼塘：清空
+  - response_jq:
+      match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.circle\.visited\/1\.0'
+      filter: >-
+        .data.visitedCircleList = []
+  # 关注推荐：清空解密键与下一页
+  - response_jq:
+      match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.follow\.recommend\.feed\.list'
+      filter: >-
+        .data.needDecryptKeys = [] | .data.nextPage = false | .data.fitRecommendAB = true
+  # 同城信息流组件：移除活动入口卡片
+  - response_jq:
+      match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.local\.flow\.plat\.section'
+      filter: >-
+        if .data.data.components then
+          .data.data.components |= map(select(.key != "fish_home_activity_enter_cardV1"))
+        else . end
+  # ================= 支付宝小程序 =================
+  # 饿了么小程序首页：删除悬浮模板
+  - response_jq:
+      match: '^https?:\/\/waimai-guide\.ele\.me\/h5\/mtop\.alsc\.eleme\.miniapp\.homepage'
+      filter: >-
+        del(.data.data.miniapp_suspension_template, .data.data.frontend_suspension_template)
+
+map_locals:
+  # ================= 淘宝 / 天猫 =================
+  - match: '^https?:\/\/acs\.m\.taobao\.com\/gw\/mtop\.alibaba\.advertisementservice\.getadv'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/acs\.m\.taobao\.com\/gw\/mtop\.alimusic\.common\.mobileservice\.startinit'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/acs\.m\.taobao\.com\/gw\/mtop\.o2o\.ad\.gateway\.get'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/acs\.m\.taobao\.com\/gw\/mtop\.taobao\.idle\.home\.welcome'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/acs\.m\.taobao\.com\/gw\/mtop\.trip\.activity\.querytmsresources'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/acs\.m\.taobao\.com\/gw\/mtop\.film\.mtopadvertiseapi\.queryadvertise'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/guide-acs\.m\.taobao\.com\/gw\/mtop\.taobao\.(volvo\.secondfloor\.getconfig|wireless\.home\.newface\.awesome\.get)'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/guide-acs\.m\.taobao\.com\/gw\/mtop\.film\.life\.(popup|aristotle)\.get'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/guide-acs\.m\.taobao\.com\/gw\/mtop\.cainiao\.adx\.flyad\.getad'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/heic\.alicdn\.com\/imgextra\/i\d\/\d*\/?[\w!]+-\d-(octopus|tps-1125-1602|tps-1080-1920)\.(jp|pn)g_(1\d{3}|9\d{2})x(1\d{3}|9\d{2})q[59]0'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  # 飞猪（阿里旅行，淘宝内嵌）：开屏资源与预测接口
+  - match: '^https?:\/\/acs\.m\.taobao\.com\/gw\/mtop\.fliggy\.crm\.screen\.(allresource|predict)'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  # ================= 闲鱼 =================
+  - match: '^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.item\.buy\.feeds'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.item\.resell\.recommendorhotcate'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlecommerce\.splash'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlehome\.idle\.coin\.nextfresh'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopsearch\.item\.search\.activate'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopsearch\.search\.(discover|shade)'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.live\.home\.ads\.material\.get'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.user\.strategy\.'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.topic\.banner\/'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.wireless\.home\.xianyu(\.my)?\.awesome\.get'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/h5\.m\.goofish\.com\/wow\/moyu\/moyu-project\/idle-xy-seller-home\/pages\/dress-pop'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  # ================= 支付宝小程序 =================
+  - match: '^https?:\/\/waimai-guide\.ele\.me\/h5\/mtop\.ele\.growth\.fission\.client\.etmd\.et\.getmainpageicon'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/shopping\.ele\.me\/(gw|h5)\/mtop\.o2o\.ad\.exposure\.get'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/m5-zb\.amap\.com\/ws\/promotion-web\/resource'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/m5-zb\.amap\.com\/ws\/boss\/end\/recommend'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/api\.hellobike\.com\/api\?homepage\.hitch\.awareness'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/api\.hellobike\.com\/api\?homepage\.newWelfare\.alipay'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/api\.hellobike\.com\/api\?applet\.homepage\.medal\.activity'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/waimai-guide\.ele\.me\/(gw|h5)\/mtop\.alsc\.upp\.tbet\.send'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  - match: '^https?:\/\/creditcardapp\.bankcomm\.com\/cnsvPmpaAliCardWeb\/page\/getGuidePageAds'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+
+mitm:
+  hostnames:
+    - acs.m.taobao.com
+    - guide-acs.m.taobao.com
+    - poplayer.template.alibaba.com
+    - heic.alicdn.com
+    - acs.m.goofish.com
+    - g-acs.m.goofish.com
+    - h5.m.goofish.com
+    - dinamicx.alibabausercontent.com
+    - g.alicdn.com
+    - api.hellobike.com
+    - waimai-guide.ele.me
+    - shopping.ele.me
+    - mdn.alicdn.com
+    - m5-zb.amap.com
+    - creditcardapp.bankcomm.com

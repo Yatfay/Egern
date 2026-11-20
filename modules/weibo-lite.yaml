@@ -1,0 +1,136 @@
+name: 微博轻享版去广告
+description: 移除微博轻享版开屏广告、时间线广告、评论区广告及发现页推广，需清缓存或重装 App 才生效。
+author: 可莉🅥
+homepage: https://github.com/Yatfay/Egern
+icon: https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/Weibo_intl.png
+
+# 合并来源（按新旧排序，一行一个）：
+# - Masamisuki/Tool@2026-11-02 sooyaaabo/微博轻享版.sgmodule（Keywos、kokoryh、可莉）：最新最全的轻享版规则，趋势页、时间线、搜索、开屏
+# - yaoyaole0112/surge@2026-06-01 sgmodule/Ads/微博轻享版.sgmodule（可莉）：与上者同源，趋势页、时间线、评论区、搜索填充词
+# - QingRex/LoonKissSurge@2025-07-09 Surge/微博轻享版去广告.sgmodule（可莉）：与上者同源，少两条规则
+# - Keywos/rule script/weibo_us/js/index.js（Keywos）：轻享版脚本，用户中心、热搜置顶、详情横幅、合作广告的原始逻辑，已全部转成 jq
+# - Jard1n/VPN_Tool Loon/Plugin/WeiboIntl.plugin（Keywos）：轻享版插件，sdkad、搜索建议、时间线
+# - deezertidal/shadowrocket-rules modules/weibolitead.module：轻享版模块，sdkad、搜索建议、开屏
+# - fmz200/wool_scripts@2025-12-16 Surge/module/weibo.module（奶思）：完整版微博模块，仅取轻享版也用的开屏、热搜词、日志上报等条目
+# 注意：完整版微博的大量脚本条目（搜索、超话、视频、直播等页面）是完整版 App 才用的接口，轻享版不走这些接口，故未收录。
+# 冲突已解决：
+# - sdkad.php：Keywos 脚本改 JSON（响应体带 "OK" 后缀，jq 解析不了）vs deezertidal 直接 reject → 取 reject，简单且不留尾巴
+# - 发现页 discover 栏：最新来源同时写了删整个 discover 和只过滤“尊享会员”，两者自相矛盾（删完再过滤会在空值上报错）→ 保留只过滤“尊享会员”的精细做法
+# - search_topic：deezertidal 直接 reject 整个热搜响应 vs Keywos 只去掉置顶首条 → 取 Keywos 的精细做法，热搜列表本身保留
+# - get_searching_info：Keywos 脚本返回结构化空数据 vs 四家来源 Map Local 返回 {} → 取多数来源的 {} 做法
+# - 图标另有一份：https://raw.githubusercontent.com/sooyaaabo/IconLibrary/main/App/WeiBo_Intl.png（Masamisuki 来源）
+
+rules:
+  # 日志批量上报拦截（fmz200 完整版模块同款）
+  - url_regex:
+      match: "^https?://api\\.weibo\\.cn/2/client/addlog_batch"
+      policy: REJECT
+
+url_rewrites:
+  # SDK 开屏广告接口（Keywos 脚本原逻辑：响应体带 "OK" 后缀无法用 jq 处理，直接拦截）
+  - match: '^https?://sdkapp\.uve\.weibo\.com/interface/sdk/sdkad\.php'
+    location: http://reject/
+  # SDK 配置与定位接口（fmz200、zirawell 五处来源一致）
+  - match: '^https?://sdkapp\.uve\.weibo\.com/interface/sdk/(get-lbs-cell-info\.php|sdkconfig\.php)'
+    location: http://reject/
+  # 日志上报接口（fmz200、zirawell 一致）
+  - match: '^https://api\.weibo\.cn/2/logservice/service\?'
+    location: http://reject/
+  # 搜索建议填充词（deezertidal）
+  - match: '^https?://m?api\.weibo\.c(n|om)/\d/page/get_search_suggest'
+    location: http://reject-dict/
+
+body_rewrites:
+  # 趋势页（发现页）：去掉横幅、足迹、访客记录、原生内容，只留“尊享会员”之外的发现项；只保留热搜话题排序
+  - response_jq:
+      match: '^https?://weibointl\.api\.weibo\.cn/portal\.php\?(?:[^#?&]+&)*(ct=feed&a=trends|a=trends)'
+      filter: 'del(.data.banner, .data.user_footprint, .data.profile_accessrecord, .data.native_content) | if (.data.discover | type) == "array" then .data.discover |= map(select(.schema != "尊享会员")) else . end | if .data.order then .data.order = ["search_topic"] else . end'
+  # 关注时间线 / 热门时间线：去掉广告字段，按 ad_marked、mblogtypename、promotion 过滤广告微博
+  - response_jq:
+      match: '^https?://m?api\.weibo\.c(n|om)/\d/statuses/(friends/timeline|friends_timeline|unread_hot_timeline)(\?|$)'
+      filter: 'del(.ad, .advertises, .ad_version_2_weibo, .trends) | if .statuses then .statuses |= map(select(.ad_marked != true and ((.mblogtypename // "") | test("^(广告|廣告|热推|熱推)$") | not) and ((.promotion.type // "") != "ad"))) else . end'
+  # 评论区：把评论广告标记打开（Keywos 脚本逻辑转 jq）
+  - response_jq:
+      match: '^https?://m?api\.weibo\.c(n|om)/\d/comments/build_comments\?'
+      filter: 'if .datas then .datas[].data.ad_from_comment? = true else . end'
+  # 详情页：去掉页头“热搜”置顶项
+  - response_jq:
+      match: '^https?://m?api\.weibo\.c(n|om)/\d/statuses/container_detail\?'
+      filter: 'if (.pageHeader.data.items | type) == "array" then .pageHeader.data.items |= map(select(.data.itemid != "top_searching")) else . end'
+  # 卡片列表：过滤带广告标记的卡片及卡片组
+  - response_jq:
+      match: '^https?://m?api\.weibo\.c(n|om)/\d/cardlist\?(?:[^#?&]+&)*aid='
+      filter: 'if .cards then .cards |= map(select(((.mblog? | (.ad_marked? | type == "boolean") and .ad_marked == true) or (.card_group? | type == "array" and any(.[]?; .mblog? | (.ad_marked? | type == "boolean") and .ad_marked == true))) | not)) else . end'
+  # 我的页面：去掉尊享专属、壁纸、反馈、话题推广项（Keywos 脚本逻辑转 jq）
+  - response_jq:
+      match: '^https?://weibointl\.api\.weibo\.cn/portal\.php\?(?:[^#?&]+&)*a=user_center'
+      filter: 'if (.data.cards | type) == "array" then .data.cards |= map(if (.items | type) == "array" then .items |= map(select((.type // "") as $t | ["personal_vip", "personal_wallpaper", "personal_feedback", "personal_topic"] | index($t) | not)) else . end) else . end'
+  # 热搜话题：去掉置顶首条（Keywos 脚本逻辑转 jq）
+  - response_jq:
+      match: '^https?://weibointl\.api\.weibo\.cn/portal\.php\?(?:[^#?&]+&)*a=search_topic'
+      filter: 'if .data[0].type? == "searchtop" then .data |= .[1:] else . end'
+  # 打开 App 详情横幅：清空详情页广告字段（Keywos 脚本逻辑转 jq）
+  - response_jq:
+      match: '^https?://weibointl\.api\.weibo\.cn/portal\.php\?(?:[^#?&]+&)*a=open_app&auth'
+      filter: 'if .data then .data |= (.uve_ad_scene = "" | .vip_title_ad = "" | .background_preview = "" | .detail_banner_ad = [] | (if .vip_info then .vip_info.tips = {} else . end) | (if .close_ad_setting then .close_ad_setting = {} else . end)) else . end'
+  # 合作广告接口：清空广告列表与广告位（Keywos 脚本逻辑转 jq）
+  - response_jq:
+      match: '^https?://weibointl\.api\.weibo\.cn/portal\.php\?(?:[^#?&]+&)*a=get_coopen_ads'
+      filter: 'if .data then .data |= (.ad_list = [] | .gdt_video_ad_ios = [] | .display_ad = 0 | .ad_ios_id = null | .app_ad_ios_id = null | .reserve_ad_ios_id = "" | .reserve_app_ad_ios_id = "" | .ad_duration = 6000000 | .ad_cd_interval = 6000000 | .pic_ad = []) else . end'
+  # 通用：所有 portal.php 响应里“尊享专属”项的右侧文案清空
+  - response_jq:
+      match: '^https?://weibointl\.api\.weibo\.cn/portal\.php\?'
+      filter: 'if (.data.cards | type) == "array" then .data.cards |= map(if (.items | type) == "array" then .items |= map(if .type == "personal_vip" then .right_text = "" else . end) else . end) else . end'
+
+map_locals:
+  # 热门视频 | 热推荐卡片列表（可莉、fmz200 一致）
+  - match: '^https?://m?api\.weibo\.c(n|om)/\d/(cardlist\?(?:[^#?&]+&)*v_f=\d|ad/weibointl\?)'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  # 热搜用户、绿洲擦边推广（Masamisuki、fmz200 一致）
+  - match: '^https?://weibointl\.api\.weibo\.c(n|om)/portal\.php\?(?:[^#?&]+&)*a=(hot_search_users|treehole&auth=)'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  # 开屏广告预加载（可莉两处来源一致；fmz200 用 v\d 覆盖更多版本）
+  - match: '^https://bootpreload\.uve\.weibo\.com/v\d/ad/preload$'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  # 开屏广告实时拉取（fmz200、zirawell 一致）
+  - match: '^https://bootrealtime\.uve\.weibo\.com/v\d/ad/realtime$'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  # 广告接口（可莉两处来源一致）
+  - match: '^https://api\.weibo\.cn/2/ad/'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  # 热搜词填充（可莉两处来源一致；fmz200 同款）
+  - match: '^https?://weibointl\.api\.weibo\.cn/portal\.php\?(?:[^#?&]+&)*a=get_searching_info'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+  # 首页左上角每日弹窗提示（fmz200）
+  - match: '^https?://m?api\.weibo\.c(n|om)/\d/push/daily'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+
+mitm:
+  hostnames:
+    - weibointl.api.weibo.cn
+    - api.weibo.cn
+    - m.api.weibo.cn
+    - bootpreload.uve.weibo.com
+    - bootrealtime.uve.weibo.com
+    - sdkapp.uve.weibo.com

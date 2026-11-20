@@ -1,0 +1,227 @@
+name: 京东系去广告
+description: 京东、京东金融、京东特价版（京喜）去广告：开屏、首页/我的/订单/物流页推广楼层与弹窗；适配京东 15.9.50+ 新协议（响应体 base64 化）。部分规则需清缓存或重装 App 才生效。
+author: zbsdsb, zirawell, 奶思
+homepage: https://github.com/Yatfay/Egern
+icon: https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/JD.png
+# 合并来源（一行一个）：
+# - zbsdsb/loon-adblock-plugins JD_remove_ads_v2.js @2026-08-12：核心脚本，适配 15.9.50+ base64 新协议（基于 RuCu6 / Maasea / kelee 原插件）
+# - zirawell/R-Store @2026-05-20：规则、readCustomSurfaceList、京东金融、京东特价版（京喜）
+# - fmz200/wool_scripts @2026-11-11：规则（奶思）、京东金融开屏与广告接口
+# - QingRex/LoonKissSurge @2025-05-13：京东去广告（RuCu6, Maasea）
+# - huangkouping/egern @2026-11-02：Egern 原生适配参考（jd-adblock.yaml）
+# - Tartarus2014/Loon-Script @2026-08-12：京东去广告 v2 插件封装
+# 冲突处理：
+# - welcomeHome 首页楼层：R-Store 白名单 vs zbsdsb/fmz200 黑名单 → 采用黑名单（最新两源一致；白名单会隐藏新楼层类型）
+# - start 开屏：脚本 images=[] 与 map-local/reject-img 冲突 → 采用 url_rewrite reject-dict（最新 Egern 源）+ 脚本兜底
+# - getWidgetV1052 直播小窗：被 zirawell 的 getWidget 通配覆盖 → 删重复项
+# - searchBoxWord 等：map-local 与 reject-200 同义 → 采用 map-local（带状态与响应体，更具体）
+# - (bdsp-x|dsp-x)/adx、京东金融开屏图、adInfo、getLaunchImageList：同上，map-local 优先
+# - queryMaterialAdverts：zirawell 用空文本 map-local，huangkouping 用空 JSON → 采用 reject-dict（JSON 接口返回 {} 更安全）
+# - uniformRecommend：QingRex 覆盖 [06]，zirawell 覆盖 7 → 合并为 [067]
+# - getLoadingPicture：fmz200 单条被 zirawell 的 aladdin 分组覆盖 → 删重复项
+# - jddebug diagnose URL 规则：已被 DOMAIN-SUFFIX jddebug.com 规则覆盖 → 删重复项
+# - basicConfig 的 socketmonitor/httpdns 改写（QingRex）：非广告，改动联网行为 → 丢弃
+# - blackmatrix7 京东开屏（hd.mina.mi.com）：小米端开屏接口，与京东 App 主接口无关 → 丢弃
+# - 京东签到/cookie 脚本（jd_cookie.js）：非去广告 → 丢弃
+# - 京东健康/读书/云无线宝：不在本次范围 → 未收录
+# - huangkouping 的 rewrites/respond 字段：egern-docs 未收录该字段 → 改用等价的 url_rewrites reject-dict
+# - 京东外卖去广告（QingRex）：独立 mini 服务，不在本模块范围 → 未收录
+
+rules:
+  # 京东广告与追踪域名（fmz200 @2026-11-11 + zirawell @2026-05-20 + huangkouping @2026-11-02）
+  - domain_suffix:
+      match: jzt.jd.com
+      policy: REJECT
+  - domain_suffix:
+      match: img-x.jd.com
+      policy: REJECT
+  - domain_suffix:
+      match: du.jd.com
+      policy: REJECT
+  - domain_suffix:
+      match: c-nfa.jd.com
+      policy: REJECT
+  - domain_suffix:
+      match: cm.jd.com
+      policy: REJECT
+  - domain_suffix:
+      match: jddebug.com
+      policy: REJECT
+  - domain_suffix:
+      match: policy.jd.com
+      policy: REJECT
+  - domain_suffix:
+      match: kepler.jd.com
+      policy: REJECT
+  - domain_suffix:
+      match: bdsp.x.jd.com
+      policy: REJECT
+  - domain_suffix:
+      match: keplerapi.jd.com
+      policy: REJECT
+  - domain_suffix:
+      match: mapi.m.jd.com
+      policy: REJECT
+  - domain_suffix:
+      match: ad.3.cn
+      policy: REJECT
+  - domain_suffix:
+      match: jd.c-ptsp.com.cn
+      policy: REJECT
+  - domain:
+      match: dns.jd.com
+      policy: REJECT
+  - domain:
+      match: perf.m.jd.com
+      policy: REJECT
+  - domain:
+      match: mars.jd.com
+      policy: REJECT
+  - domain:
+      match: ex.m.jd.com
+      policy: REJECT
+  - domain:
+      match: mllog.jd.com
+      policy: REJECT
+  - domain:
+      match: waapdg.jd.com
+      policy: REJECT
+  - domain:
+      match: dsp-x.jd.com
+      policy: REJECT
+  - domain:
+      match: xlog.jd.com
+      policy: REJECT
+  - domain:
+      match: janapi.jd.com
+      policy: REJECT
+  - domain:
+      match: jdqd.jd.com
+      policy: REJECT
+  - domain:
+      match: dgstatic.jd.com
+      policy: REJECT
+  - domain:
+      match: wqs.jd.com
+      policy: REJECT
+  - domain:
+      match: sdkfp.jd.com
+      policy: REJECT
+  - domain:
+      match: second-floor-pro.pf.jd.com
+      policy: REJECT
+  - domain:
+      match: im-x.jd.com
+      policy: REJECT
+  - domain:
+      match: discover.300hu.com
+      policy: REJECT
+  - domain:
+      match: dlog.jd.com
+      policy: REJECT
+  - ip_cidr:
+      match: 101.124.19.122/32
+      policy: REJECT
+      no_resolve: true
+  - ip_cidr:
+      match: 43.160.156.164/32
+      policy: REJECT
+      no_resolve: true
+  - ip_cidr:
+      match: 61.170.65.165/32
+      policy: REJECT
+      no_resolve: true
+  - ip_cidr6:
+      match: 2402:db40:5100:1011::5/128
+      policy: REJECT
+      no_resolve: true
+
+url_rewrites:
+  # 开屏与广告素材接口：返回空 JSON（huangkouping @2026-11-02；脚本同时兜底）
+  - match: '^https?://api\.m\.jd\.(com|hk)/client\.action\?(?:[^&]+&)*functionId=(?:start|queryMaterialAdverts)(?:&|$)'
+    location: http://reject-dict/
+  # 屏蔽强制更新（zirawell @2026-05-20）
+  - match: '^https?://api\.m\.jd\.com/openUpgrade'
+    location: http://reject/
+  - match: '^https?://api\.m\.jd\.com/api/appPublishUpgrade'
+    location: http://reject/
+  # 首页/购物车推广素材（zirawell @2026-05-20）
+  - match: '^https?://storage\.360buyimg\.com/app\.m\.jd\.com/lottie'
+    location: http://reject/
+  - match: '^https?://storage\.360buyimg\.com/dynamicConfig/binary'
+    location: http://reject/
+  - match: '^https?://storage\.360buyimg\.com/occupy-home/'
+    location: http://reject/
+  - match: '^https?://storage\.360buyimg\.com/xview'
+    location: http://reject/
+  - match: '^https?://storage\.360buyimg\.com/appcartsoa/client/cart_egg_entry'
+    location: http://reject/
+  - match: '^https?://img\d+\.360buyimg\.com/jddjadvertise/'
+    location: http://reject/
+  - match: '^https?://storage\.jd\.com/ti-pythontask/JD/jdt_'
+    location: http://reject/
+  - match: '^https?://storage\.jd\.com/mpaas2-public/product/\d+/'
+    location: http://reject/
+  # 京喜（京东特价版）广告接口（zirawell @2025-07-22）
+  - match: '^https?://api\.m\.jd\.com/client\.action\?functionId=lite_advertising'
+    location: http://reject/
+  # 京东金融首页/开屏（zirawell @2026-05-09，分组覆盖 fmz200 的单条 getLoadingPicture）
+  - match: '^https?://ms\.jr\.jd\.com/gw/generic/aladdin/(?:new)?na/m/(?:getLoadingPicture|getPageMutilDataForHomePage|getTopCard|getBottomNavigation)'
+    location: http://reject/
+  # 京东金融第三方广告 SDK（fmz200 @2026-11-11）
+  - match: '^https?://appconf\.mail\.163\.com/mmad/'
+    location: http://reject/
+  - match: '^https?://support\.you\.163\.com/xhr/boot/getBootMedia\.json'
+    location: http://reject/
+
+map_locals:
+  # 广告配置接口：返回空文本 200（zirawell @2026-05-20；QingRex 的 uniformRecommend[06] 已合并为 [067]）
+  - match: '^https?://api\.m\.jd\.com/client\.action\?functionId=(?:searchBoxWord|xview2Config|stationPullService|getWidget|widget|hybrid|jdDiscoveryRedPoint|apollo_style|jdaPreDownload|uniformRecommend[067])'
+    status_code: 200
+    headers:
+      Content-Type: text/plain
+    body: ''
+  # 广告交易平台（fmz200 + zirawell 一致）
+  - match: '^https?://(?:bdsp-x|dsp-x)\.jd\.com/adx/'
+    status_code: 200
+    headers:
+      Content-Type: text/plain
+    body: ''
+  # 京东金融开屏图（fmz200 + zirawell 一致）
+  - match: '^https?://m\.360buyimg\.com/mobilecms/s1125x2436_jfs/'
+    status_code: 200
+    headers:
+      Content-Type: text/plain
+    body: ''
+  # 京东金融广告信息（zirawell @2026-05-09）
+  - match: '^https?://ms\.jr\.jd\.com/gw/generic/base/(?:new)?na/m/adInfo'
+    status_code: 200
+    headers:
+      Content-Type: text/plain
+    body: ''
+  # 京东金融开屏图列表：返回空 JSON（zirawell @2026-05-09）
+  - match: '^https?://ms\.jr\.jd\.com/gw/generic/app/(?:new)?na/m/getLaunchImageList'
+    status_code: 200
+    headers:
+      Content-Type: application/json
+    body: '{}'
+
+scriptings:
+  - http_response:
+      name: 京东去广告
+      match: '^https?://api\.m\.jd\.(com|hk)/client\.action'
+      script_url: https://raw.githubusercontent.com/Yatfay/Egern/main/scripts/jd.js
+      body_required: true
+      max_size: 2097152
+
+mitm:
+  hostnames:
+    - api.m.jd.com
+    - api.m.jd.hk
+    - '*.360buyimg.com'
+    - storage.jd.com
+    - ms.jr.jd.com
+    - appconf.mail.163.com
+    - support.you.163.com
+    - bdsp-x.jd.com
+    - dsp-x.jd.com
