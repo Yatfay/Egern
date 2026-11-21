@@ -3,6 +3,10 @@
 # - fmz200/wool_scripts@2026-11-11（Loon，作者 奶思）：美团、美团 & 美团外卖、大众点评、小象超市、美团充电宝小程序、美团众包
 # - zirawell/R-Store@2026-08-31（Surge/QX，作者 zirawell）：美团、美团外卖、大众点评、美团众包、美团充电宝（微信小程序）
 # - zirawell/R-Store Res/Scripts/AntiAd/meituan.js、dianping.js、meituanwm.js（作者 zirawell；meituanwm.js 另注出处 ZenmoFeiShi/Qx）
+# - zirawell/Ad-Cleaner（同作者的新版仓库）：大众点评 dianPing.conf 与 Collection/js/dianping.js
+#   （2026-11-21 修订：大众点评图片脚本改用 Ad-Cleaner 新版逻辑——只看 m-shark-traceid，返回 204；
+#   goodsawardpic 改整路径 reject-img；新增 mars.meituan.com/locate 拦截与 ddplus mmp；
+#   开屏接口 loadsplashconfig 与信息流 intelliindex 与新版来源一致，仍有开屏广告多半是 App 缓存未清）
 # - fmz200/wool_scripts Scripts/meituan/meituan_ads.js@2024-02-22（作者 fmz200）：订单详情 poiStatus
 # - I-am-R-E/Functional-Store-Hub 与 leiyiyan/resource 无美团系去广告模块，未采用
 # 冲突处理：
@@ -180,7 +184,9 @@ url_rewrites:
     location: http://reject/
   - match: '^https?:\/\/s3plus\.meituan\.net\/ocean-blk-index\/index\/blk_conf'
     location: http://reject/
-  - match: '^https?:\/\/ddplus\.meituan\.net\/v\d\/mss_\w+\/(?:ehc|titansx|ddblue|edfu)\/'
+  - match: '^https?:\/\/ddplus\.meituan\.net\/v\d\/mss_\w+\/(?:mmp|ehc|titansx|ddblue|edfu)\/'
+    location: http://reject/
+  - match: '^https?:\/\/mars\.meituan\.com\/locate\/v\d\/sdk\/loc'
     location: http://reject/
   # ---- 广告图片：返回 1px 透明图 ----
   - match: '^https?:\/\/img\.meituan\.net\/(adunion|display|midas)\/.+\.(gif|jpg)\.webp$'
@@ -199,9 +205,7 @@ url_rewrites:
     location: http://reject-img/
   - match: '^https?:\/\/img\.meituan\.net\/bizad\/bizad_brandCpt_\d+\.jpg'
     location: http://reject-img/
-  - match: '^https?:\/\/img\.meituan\.net\/goodsawardpic\/[a-f0-9]+\.png\.webp'
-    location: http://reject-img/
-  - match: '^https?:\/\/img\.meituan\.net\/goodsawardpic\/\w+\.gif'
+  - match: '^https?:\/\/img\.meituan\.net\/goodsawardpic'
     location: http://reject-img/
   - match: '^https?:\/\/s3plus\.meituan\.net\/v\d\/mss_\w+\/goku\/(?:lottie|lucency)'
     location: http://reject-img/
@@ -271,10 +275,10 @@ scriptings:
       binary_body: true
       timeout: 20
       max_size: 10485760
-  # 大众点评图片：按请求头判断广告请求，可用 DP_SCRIPT 开关关闭
+  # 大众点评图片：按请求头判断广告请求，可用 DP_SCRIPT 开关关闭（Ad-Cleaner 新版逻辑，只看 m-shark-traceid）
   - http_response:
       name: 大众点评图片
-      match: '^https?:\/\/img\.meituan\.net\/(dpmobile|goodsawardpic)\/'
+      match: '^https?:\/\/img\.meituan\.net\/dpmobile\/'
       script_url: 'https://raw.githubusercontent.com/Yatfay/Egern/main/scripts/meituan.js'
       body_required: true
       binary_body: true
@@ -296,6 +300,7 @@ mitm:
     - img.meituan.net
     - mall.meituan.com
     - mapi.dianping.com
+    - mars.meituan.com
     - npay.meituan.com
     - ordercenter.meituan.com
     - p.meituan.com

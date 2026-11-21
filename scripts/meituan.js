@@ -1,6 +1,7 @@
 // 美团系去广告（Egern 原生脚本）
 // 来源：zirawell/R-Store Res/Scripts/AntiAd/meituan.js（美团 linglong 图片）
-//       与 dianping.js（大众点评图片），按 Egern ctx API 重写。
+//       与 zirawell/Ad-Cleaner Collection/js/dianping.js（大众点评图片，
+//       同作者对 R-Store 旧版 dianping.js 的修订），按 Egern ctx API 重写。
 // 两个入口共用一份脚本，模块里按 match 分开挂载；入口正则已先过滤，
 // 这里再按 URL 分派一次是防御性的。
 // 注意：原脚本是挂在 http-response 上的 response 脚本，这里保持同样的挂载方式，
@@ -8,16 +9,6 @@
 //
 // 环境变量（由模块 compat_arguments 传入，true/false 字符串）：
 //   DP_SCRIPT：大众点评脚本开关，为 false 时大众点评分支直接透传
-
-// 1x1 透明 GIF（42 字节），与 dianping.js 原脚本相同
-const GIF_1PX_HEX = '47494638396101000100800000000000ffffff21f90401000000002c000000000100010000020144003b';
-
-function hexToBytes(hex) {
-  const clean = hex.replace(/[^0-9A-Fa-f]/g, '');
-  const out = new Uint8Array(clean.length / 2);
-  for (let i = 0; i < clean.length; i += 2) out[i / 2] = parseInt(clean.substr(i, 2), 16);
-  return out;
-}
 
 function envBool(ctx, key, def) {
   const v = ctx.env ? ctx.env[key] : undefined;
@@ -67,23 +58,16 @@ function isSquare(str) {
   return width === height || Math.abs(width - height) === 1;
 }
 
-// ---------- 大众点评：img.meituan.net/(dpmobile|goodsawardpic)/ ----------
-// 原逻辑：有 m-traceid 类请求头、但无 ai/dt/al/u 身份头的是广告请求，返回 404；
-// .gif 或 &lossless=1 的返回 1x1 透明 GIF；其余透传。
+// ---------- 大众点评：img.meituan.net/dpmobile/ ----------
+// 新逻辑（zirawell/Ad-Cleaner Collection/js/dianping.js，同作者对 R-Store 旧版的修订）：
+// 只要请求带 m-shark-traceid 请求头即视为广告请求，返回 204；其余透传。
+// 旧版还要同时满足“有 m-traceid、无 ai/dt/al/u 身份头”才拦截，并对 .gif /
+// &lossless=1 返回 1x1 透明图；新版把这两项都去掉了。goodsawardpic 不再走脚本，
+// 由模块里的 url_rewrite 整路径 reject-img（同 Ad-Cleaner）。
 function dianpingImage(ctx) {
   if (!envBool(ctx, 'DP_SCRIPT', true)) return undefined;
-  const url = ctx.request.url;
   const headers = ctx.request.headers;
-  const trace1 = hasHeader(headers, 'm-traceid') || hasHeader(headers, 'm-shark-traceid');
-  const trace2 = ['ai', 'dt', 'al', 'u'].some((k) => hasHeader(headers, k));
-  if (trace1 && !trace2) return { status: 404, headers: {}, body: '' };
-  if (url.includes('.gif') || url.includes('&lossless=1')) {
-    return {
-      status: 200,
-      headers: { 'Content-Type': 'image/gif', 'Content-Length': '42', Connection: 'close' },
-      body: hexToBytes(GIF_1PX_HEX),
-    };
-  }
+  if (hasHeader(headers, 'm-shark-traceid')) return { status: 204, headers: {}, body: '' };
   return undefined;
 }
 
