@@ -30,7 +30,7 @@
 # 开关一览（默认全部 false = 全部开启，与改动前行为一致）：
 # - MT_OFF  关闭美团 App 去广告
 # - WM_OFF  关闭美团外卖去广告
-# - DP_OFF  关闭大众点评去广告（总开关；见下与 DP_SCRIPT 的区别）
+# - DP_OFF  关闭大众点评去广告（总开关；原 DP_SCRIPT 脚本开关已于 2026-11-27 并入此开关）
 # - XX_OFF  关闭小象超市去广告
 # - CDB_OFF 关闭美团充电宝去广告
 # - ZB_OFF  关闭美团众包去广告
@@ -46,14 +46,12 @@
 # 为什么开关名是“关闭XX”而不是“开启XX”：disabled 取的是启用开关的反值；
 # 若做成“美团去广告”ON 开关，开关显示 ON 时实际是 disabled=true（已关闭），
 # 方向完全颠倒；故参数本身就是 DISABLE 标志，标签如实写“关闭XX去广告”。
-# DP_SCRIPT 与 DP_OFF 的区别：DP_SCRIPT（原有，大众点评-脚本开关，默认 true）只控制
-# 脚本内部——大众点评图片脚本收到 DP_SCRIPT=false 时不处理图片；DP_OFF（新增总开关）
-# 则在配置层禁用全部大众点评条目（含该 scripting 条目本身及所有规则/重写）。
-# 两者可叠加：DP_OFF=true 时脚本条目根本不执行；DP_OFF=false 且 DP_SCRIPT=false 时，
-# 其余大众点评条目仍生效，只有图片脚本内部关闭。DP_SCRIPT 各行保持原样未动。
+# DP_SCRIPT（原有，大众点评-脚本开关，默认 true）已于 2026-11-27 并入 DP_OFF：脚本里的
+# DP_SCRIPT 判断已删除，大众点评图片脚本现在只要条目启用就处理；DP_OFF 在配置层禁用
+# 全部大众点评条目（含该 scripting 条目本身及所有规则/重写），一个开关管全部。
 # 注意：mitm hostnames 是模块级配置，不随开关变化；关闭某 App 只是让该 App 的
 # 条目全部失效（不再改写/拦截），MITM 拦截本身仍会放行流量（原样通过，不修改）。
-# 原始文件未动；脚本 meituan.js 未改（scriptings 条目由 disabled 在配置层关闭）。
+# 2026-11-27：DP_SCRIPT 并入 DP_OFF，脚本 meituan.js 同步删除 DP_SCRIPT 判断。
 name: 美团系去广告
 description: 去除美团、美团外卖、大众点评、小象超市、美团充电宝与美团众包的开屏、信息流与推广广告；某些 App 需清除缓存或重装才生效。各 App 去广告可单独开关，默认全开。
 author: 奶思, zirawell
@@ -61,8 +59,8 @@ homepage: https://github.com/Yatfay/Egern
 icon: https://raw.githubusercontent.com/zirawell/R-Store/main/Res/Icon/App/meituan.png
 
 # 大众点评脚本开关（来自 Loon [Argument] davsdmpk_enable；true = 启用）
+# 2026-11-27：已并入 DP_OFF 总开关，此处删除。
 compat_arguments:
-  DP_SCRIPT: true
   MT_OFF: false
   WM_OFF: false
   DP_OFF: false
@@ -71,12 +69,6 @@ compat_arguments:
   ZB_OFF: false
 
 env_schema:
-  DP_SCRIPT:
-    name: "大众点评-脚本开关"
-    options:
-      - "true"
-      - "false"
-    default_value: "true"
   MT_OFF:
     name: "关闭美团去广告"
     options:
@@ -425,7 +417,7 @@ scriptings:
       binary_body: true
       timeout: 20
       max_size: 10485760
-  # 大众点评图片：按请求头判断广告请求，可用 DP_SCRIPT 开关关闭（Ad-Cleaner 新版逻辑，只看 m-shark-traceid）
+  # 大众点评图片：按请求头判断广告请求，可用 DP_OFF 总开关关闭（Ad-Cleaner 新版逻辑，只看 m-shark-traceid）
   - http_response:
       name: 大众点评图片
       match: '^https?:\/\/img\.meituan\.net\/dpmobile\/'
@@ -435,8 +427,6 @@ scriptings:
       binary_body: true
       timeout: 20
       max_size: 10485760
-      env:
-        DP_SCRIPT: '{{{DP_SCRIPT}}}'
 
 mitm:
   hostnames:

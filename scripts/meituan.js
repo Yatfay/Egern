@@ -6,15 +6,7 @@
 // 这里再按 URL 分派一次是防御性的。
 // 注意：原脚本是挂在 http-response 上的 response 脚本，这里保持同样的挂载方式，
 // 只用 ctx.request 的 URL 与请求头做判断，不读响应体。
-//
-// 环境变量（由模块 compat_arguments 传入，true/false 字符串）：
-//   DP_SCRIPT：大众点评脚本开关，为 false 时大众点评分支直接透传
-
-function envBool(ctx, key, def) {
-  const v = ctx.env ? ctx.env[key] : undefined;
-  if (v === undefined || v === null || v === '') return def;
-  return String(v) === 'true';
-}
+// 2026-11-27：DP_SCRIPT 开关已并入模块的 DP_OFF 总开关，脚本内不再判断。
 
 function hasHeader(headers, name) {
   return headers ? headers.has(name) : false;
@@ -65,7 +57,6 @@ function isSquare(str) {
 // &lossless=1 返回 1x1 透明图；新版把这两项都去掉了。goodsawardpic 不再走脚本，
 // 由模块里的 url_rewrite 整路径 reject-img（同 Ad-Cleaner）。
 function dianpingImage(ctx) {
-  if (!envBool(ctx, 'DP_SCRIPT', true)) return undefined;
   const headers = ctx.request.headers;
   if (hasHeader(headers, 'm-shark-traceid')) return { status: 204, headers: {}, body: '' };
   return undefined;
