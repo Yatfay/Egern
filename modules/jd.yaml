@@ -1,8 +1,33 @@
 name: 京东系去广告
-description: 京东、京东金融、京东特价版（京喜）去广告：开屏、首页/我的/订单/物流页推广楼层与弹窗；适配京东 15.9.50+ 新协议（响应体 base64 化）。部分规则需清缓存或重装 App 才生效。
+description: 京东、京东金融、京东特价版（京喜）去广告：开屏、首页/我的/订单/物流页推广楼层与弹窗；适配京东 15.9.50+ 新协议（响应体 base64 化）。部分规则需清缓存或重装 App 才生效。各 App 去广告可单独开关，默认全开。
 author: zbsdsb, zirawell, 奶思
 homepage: https://github.com/Yatfay/Egern
 icon: https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/JD.png
+compat_arguments:
+  JD_OFF: false
+  JDJR_OFF: false
+  JX_OFF: false
+
+env_schema:
+  JD_OFF:
+    name: "关闭京东去广告"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+  JDJR_OFF:
+    name: "关闭京东金融去广告"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+  JX_OFF:
+    name: "关闭京喜去广告"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+
 # 合并来源（一行一个）：
 # - zbsdsb/loon-adblock-plugins JD_remove_ads_v2.js @2026-08-12：核心脚本，适配 15.9.50+ base64 新协议（基于 RuCu6 / Maasea / kelee 原插件）
 # - zirawell/R-Store @2026-05-20：规则、readCustomSurfaceList、京东金融、京东特价版（京喜）
@@ -27,152 +52,220 @@ icon: https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/
 # - huangkouping 的 rewrites/respond 字段：egern-docs 未收录该字段 → 改用等价的 url_rewrites reject-dict
 # - 京东外卖去广告（QingRex）：独立 mini 服务，不在本模块范围 → 未收录
 
+# ---- 各 App 去广告总开关（2026-11-27 新增）----
+# 开关一览（默认全部 false = 全部开启，与改动前行为一致）：
+# - JD_OFF   关闭京东 App 去广告
+# - JDJR_OFF 关闭京东金融去广告
+# - JX_OFF   关闭京喜（京东特价版）去广告
+# 机制：每个条目带 disabled: {{{KEY}}}；Egern 在模块解析时做参数替换
+# （configuration-modules.md “参数替换”：每个 {{{参数名}}} 占位符都会被替换；
+# 布尔字段不加引号，文档示例即 `enabled: {{{FLAG}}}`），替换后 disabled 解析为真布尔值。
+# disabled 字段文档依据：rules（configuration-rules.md）、url_rewrites
+# （configuration-url_rewrites.md）、map_locals（见下）、scriptings
+# （configuration-scriptings.md）——其中 map_locals 的 disabled 未见于文档
+# （configuration-example.md 的 map_locals 示例只列 match/status_code/headers/body），
+# 是按其余四类条目统一模式推断的，需真机验证，见 toggles/jd-meituan.report.md。
+# 为什么开关名是“关闭XX”而不是“开启XX”：disabled 取的是启用开关的反值；
+# 若做成“京东去广告”ON 开关，开关显示 ON 时实际是 disabled=true（已关闭），
+# 方向完全颠倒；故参数本身就是 DISABLE 标志，标签如实写“关闭XX去广告”。
+# 注意：mitm hostnames 是模块级配置，不随开关变化；关闭某 App 只是让该 App 的
+# 条目全部失效（不再改写/拦截），MITM 拦截本身仍会放行流量（原样通过，不修改）。
+# 原始文件未动；脚本 jd.js 未改（scriptings 条目由 disabled 在配置层关闭）。
 rules:
   # 京东广告与追踪域名（fmz200 @2026-11-11 + zirawell @2026-05-20 + huangkouping @2026-11-02）
   - domain_suffix:
       match: jzt.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain_suffix:
       match: img-x.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain_suffix:
       match: du.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain_suffix:
       match: c-nfa.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain_suffix:
       match: cm.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain_suffix:
       match: jddebug.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain_suffix:
       match: policy.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain_suffix:
       match: kepler.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain_suffix:
       match: bdsp.x.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain_suffix:
       match: keplerapi.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain_suffix:
       match: mapi.m.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain_suffix:
       match: ad.3.cn
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain_suffix:
       match: jd.c-ptsp.com.cn
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: dns.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: perf.m.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: mars.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: ex.m.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: mllog.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: waapdg.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: dsp-x.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: xlog.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: janapi.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: jdqd.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: dgstatic.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: wqs.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: sdkfp.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: second-floor-pro.pf.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: im-x.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: discover.300hu.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - domain:
       match: dlog.jd.com
       policy: REJECT
+      disabled: {{{JD_OFF}}}
   - ip_cidr:
       match: 101.124.19.122/32
       policy: REJECT
       no_resolve: true
+      disabled: {{{JD_OFF}}}
   - ip_cidr:
       match: 43.160.156.164/32
       policy: REJECT
       no_resolve: true
+      disabled: {{{JD_OFF}}}
   - ip_cidr:
       match: 61.170.65.165/32
       policy: REJECT
       no_resolve: true
+      disabled: {{{JD_OFF}}}
   - ip_cidr6:
       match: 2402:db40:5100:1011::5/128
       policy: REJECT
       no_resolve: true
+      disabled: {{{JD_OFF}}}
 
 url_rewrites:
   # 开屏与广告素材接口：返回空 JSON（huangkouping @2026-11-02；脚本同时兜底）
   - match: '^https?://api\.m\.jd\.(com|hk)/client\.action\?(?:[^&]+&)*functionId=(?:start|queryMaterialAdverts)(?:&|$)'
     location: http://reject-dict/
+    disabled: {{{JD_OFF}}}
   # 屏蔽强制更新（zirawell @2026-05-20）
   - match: '^https?://api\.m\.jd\.com/openUpgrade'
     location: http://reject/
+    disabled: {{{JD_OFF}}}
   - match: '^https?://api\.m\.jd\.com/api/appPublishUpgrade'
     location: http://reject/
+    disabled: {{{JD_OFF}}}
   # 首页/购物车推广素材（zirawell @2026-05-20）
   - match: '^https?://storage\.360buyimg\.com/app\.m\.jd\.com/lottie'
     location: http://reject/
+    disabled: {{{JD_OFF}}}
   - match: '^https?://storage\.360buyimg\.com/dynamicConfig/binary'
     location: http://reject/
+    disabled: {{{JD_OFF}}}
   - match: '^https?://storage\.360buyimg\.com/occupy-home/'
     location: http://reject/
+    disabled: {{{JD_OFF}}}
   - match: '^https?://storage\.360buyimg\.com/xview'
     location: http://reject/
+    disabled: {{{JD_OFF}}}
   - match: '^https?://storage\.360buyimg\.com/appcartsoa/client/cart_egg_entry'
     location: http://reject/
+    disabled: {{{JD_OFF}}}
   - match: '^https?://img\d+\.360buyimg\.com/jddjadvertise/'
     location: http://reject/
+    disabled: {{{JD_OFF}}}
   - match: '^https?://storage\.jd\.com/ti-pythontask/JD/jdt_'
     location: http://reject/
+    disabled: {{{JD_OFF}}}
   - match: '^https?://storage\.jd\.com/mpaas2-public/product/\d+/'
     location: http://reject/
+    disabled: {{{JD_OFF}}}
   # 京喜（京东特价版）广告接口（zirawell @2025-07-22）
   - match: '^https?://api\.m\.jd\.com/client\.action\?functionId=lite_advertising'
     location: http://reject/
+    disabled: {{{JX_OFF}}}
   # 京东金融首页/开屏（zirawell @2026-05-09，分组覆盖 fmz200 的单条 getLoadingPicture）
   - match: '^https?://ms\.jr\.jd\.com/gw/generic/aladdin/(?:new)?na/m/(?:getLoadingPicture|getPageMutilDataForHomePage|getTopCard|getBottomNavigation)'
     location: http://reject/
+    disabled: {{{JDJR_OFF}}}
   # 京东金融第三方广告 SDK（fmz200 @2026-11-11）
   - match: '^https?://appconf\.mail\.163\.com/mmad/'
     location: http://reject/
+    disabled: {{{JDJR_OFF}}}
   - match: '^https?://support\.you\.163\.com/xhr/boot/getBootMedia\.json'
     location: http://reject/
+    disabled: {{{JDJR_OFF}}}
 
 map_locals:
   # 广告配置接口：返回空文本 200（zirawell @2026-05-20；QingRex 的 uniformRecommend[06] 已合并为 [067]）
@@ -181,36 +274,42 @@ map_locals:
     headers:
       Content-Type: text/plain
     body: ''
+    disabled: {{{JD_OFF}}}
   # 广告交易平台（fmz200 + zirawell 一致）
   - match: '^https?://(?:bdsp-x|dsp-x)\.jd\.com/adx/'
     status_code: 200
     headers:
       Content-Type: text/plain
     body: ''
+    disabled: {{{JD_OFF}}}
   # 京东金融开屏图（fmz200 + zirawell 一致）
   - match: '^https?://m\.360buyimg\.com/mobilecms/s1125x2436_jfs/'
     status_code: 200
     headers:
       Content-Type: text/plain
     body: ''
+    disabled: {{{JDJR_OFF}}}
   # 京东金融广告信息（zirawell @2026-05-09）
   - match: '^https?://ms\.jr\.jd\.com/gw/generic/base/(?:new)?na/m/adInfo'
     status_code: 200
     headers:
       Content-Type: text/plain
     body: ''
+    disabled: {{{JDJR_OFF}}}
   # 京东金融开屏图列表：返回空 JSON（zirawell @2026-05-09）
   - match: '^https?://ms\.jr\.jd\.com/gw/generic/app/(?:new)?na/m/getLaunchImageList'
     status_code: 200
     headers:
       Content-Type: application/json
     body: '{}'
+    disabled: {{{JDJR_OFF}}}
 
 scriptings:
   - http_response:
       name: 京东去广告
       match: '^https?://api\.m\.jd\.(com|hk)/client\.action'
       script_url: https://raw.githubusercontent.com/Yatfay/Egern/main/scripts/jd.js
+      disabled: {{{JD_OFF}}}
       body_required: true
       max_size: 2097152
 

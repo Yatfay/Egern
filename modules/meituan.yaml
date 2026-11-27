@@ -26,8 +26,36 @@
 # - scripts/meituan.js 合并了 zirawell 的 meituan.js（linglong 图片）与 dianping.js（大众点评图片）；
 #   ddplus picassovc 的字符串替换已降为 response_regex，不在脚本里
 # - meituan.js 原脚本里 @1sc 会员图保护判断写在带 $ 锚点的正则分支内、实际永不触发；移植时提到分支前才生效（见脚本注释）
+# ---- 各 App 去广告总开关（2026-11-27 新增）----
+# 开关一览（默认全部 false = 全部开启，与改动前行为一致）：
+# - MT_OFF  关闭美团 App 去广告
+# - WM_OFF  关闭美团外卖去广告
+# - DP_OFF  关闭大众点评去广告（总开关；见下与 DP_SCRIPT 的区别）
+# - XX_OFF  关闭小象超市去广告
+# - CDB_OFF 关闭美团充电宝去广告
+# - ZB_OFF  关闭美团众包去广告
+# 机制：每个条目带 disabled: {{{KEY}}}；Egern 在模块解析时做参数替换
+# （configuration-modules.md “参数替换”：每个 {{{参数名}}} 占位符都会被替换；
+# 布尔字段不加引号，文档示例即 `enabled: {{{FLAG}}}`），替换后 disabled 解析为真布尔值。
+# disabled 字段文档依据：rules（configuration-rules.md）、url_rewrites
+# （configuration-url_rewrites.md）、body_rewrites（configuration-body_rewrites.md，
+# response_jq / response_regex 均有 disabled）、map_locals（见下）、scriptings
+# （configuration-scriptings.md）——其中 map_locals 的 disabled 未见于文档
+# （configuration-example.md 的 map_locals 示例只列 match/status_code/headers/body），
+# 是按其余四类条目统一模式推断的，需真机验证，见 toggles/jd-meituan.report.md。
+# 为什么开关名是“关闭XX”而不是“开启XX”：disabled 取的是启用开关的反值；
+# 若做成“美团去广告”ON 开关，开关显示 ON 时实际是 disabled=true（已关闭），
+# 方向完全颠倒；故参数本身就是 DISABLE 标志，标签如实写“关闭XX去广告”。
+# DP_SCRIPT 与 DP_OFF 的区别：DP_SCRIPT（原有，大众点评-脚本开关，默认 true）只控制
+# 脚本内部——大众点评图片脚本收到 DP_SCRIPT=false 时不处理图片；DP_OFF（新增总开关）
+# 则在配置层禁用全部大众点评条目（含该 scripting 条目本身及所有规则/重写）。
+# 两者可叠加：DP_OFF=true 时脚本条目根本不执行；DP_OFF=false 且 DP_SCRIPT=false 时，
+# 其余大众点评条目仍生效，只有图片脚本内部关闭。DP_SCRIPT 各行保持原样未动。
+# 注意：mitm hostnames 是模块级配置，不随开关变化；关闭某 App 只是让该 App 的
+# 条目全部失效（不再改写/拦截），MITM 拦截本身仍会放行流量（原样通过，不修改）。
+# 原始文件未动；脚本 meituan.js 未改（scriptings 条目由 disabled 在配置层关闭）。
 name: 美团系去广告
-description: 去除美团、美团外卖、大众点评、小象超市、美团充电宝与美团众包的开屏、信息流与推广广告；某些 App 需清除缓存或重装才生效。
+description: 去除美团、美团外卖、大众点评、小象超市、美团充电宝与美团众包的开屏、信息流与推广广告；某些 App 需清除缓存或重装才生效。各 App 去广告可单独开关，默认全开。
 author: 奶思, zirawell
 homepage: https://github.com/Yatfay/Egern
 icon: https://raw.githubusercontent.com/zirawell/R-Store/main/Res/Icon/App/meituan.png
@@ -35,6 +63,12 @@ icon: https://raw.githubusercontent.com/zirawell/R-Store/main/Res/Icon/App/meitu
 # 大众点评脚本开关（来自 Loon [Argument] davsdmpk_enable；true = 启用）
 compat_arguments:
   DP_SCRIPT: true
+  MT_OFF: false
+  WM_OFF: false
+  DP_OFF: false
+  XX_OFF: false
+  CDB_OFF: false
+  ZB_OFF: false
 
 env_schema:
   DP_SCRIPT:
@@ -43,211 +77,323 @@ env_schema:
       - "true"
       - "false"
     default_value: "true"
+  MT_OFF:
+    name: "关闭美团去广告"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+  WM_OFF:
+    name: "关闭美团外卖去广告"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+  DP_OFF:
+    name: "关闭大众点评去广告"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+  XX_OFF:
+    name: "关闭小象超市去广告"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+  CDB_OFF:
+    name: "关闭美团充电宝去广告"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
+  ZB_OFF:
+    name: "关闭美团众包去广告"
+    options:
+      - "true"
+      - "false"
+    default_value: "false"
 
 rules:
   # ---- 美团：广告 / 统计 / 日志 / HTTPDNS ----
   - domain_suffix:
       match: meituan.xn
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain_suffix:
       match: meituan.yoga
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain_suffix:
       match: meituangov.cn
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain_suffix:
       match: analytics.meituan.net
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain_suffix:
       match: wmlog.meituan.com
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain_suffix:
       match: ad.e.waimai.sankuai.com
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain_suffix:
       match: mads.meituan.com
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain_suffix:
       match: dreport.meituan.net
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain_suffix:
       match: d.meituan.net
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain:
       match: hlx.meituan.com
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain:
       match: layout.meituan.net
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain:
       match: httpdnsmultiapi.meituan.com
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain:
       match: httpdnsmultiapivip.meituan.com
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain_suffix:
       match: httpdns.meituan.com
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain_keyword:
       match: report.meituan
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - domain_keyword:
       match: dnspod.meituan.httpdns
       policy: REJECT
+      disabled: {{{MT_OFF}}}
   - ip_cidr:
       match: 103.37.155.60/32
       policy: REJECT
       no_resolve: true
+      disabled: {{{MT_OFF}}}
   # ---- 大众点评 ----
   - domain:
       match: r.dianping.com
       policy: REJECT
+      disabled: {{{DP_OFF}}}
   - domain:
       match: tte.meituan.com
       policy: REJECT
+      disabled: {{{DP_OFF}}}
   - domain:
       match: lx0.meituan.com
       policy: REJECT
+      disabled: {{{DP_OFF}}}
   - domain:
       match: dxlvs.meituan.com
       policy: REJECT
+      disabled: {{{DP_OFF}}}
   - domain:
       match: dpmtpush.dianping.com
       policy: REJECT
+      disabled: {{{DP_OFF}}}
   - domain:
       match: dynamicf.sankuai.com
       policy: REJECT
+      disabled: {{{DP_OFF}}}
   - domain:
       match: live-monitor-broker.sankuai.com
       policy: REJECT
+      disabled: {{{DP_OFF}}}
   - domain_suffix:
       match: lx.meituan.net
       policy: REJECT
+      disabled: {{{DP_OFF}}}
   - ip_cidr:
       match: 101.32.16.204/32
       policy: REJECT
       no_resolve: true
+      disabled: {{{DP_OFF}}}
   - ip_cidr:
       match: 103.63.160.80/32
       policy: REJECT
       no_resolve: true
+      disabled: {{{DP_OFF}}}
   - ip_cidr:
       match: 119.29.126.137/32
       policy: REJECT
       no_resolve: true
+      disabled: {{{DP_OFF}}}
 
 url_rewrites:
   # ---- 美团 App ----
   - match: '^https?:\/\/apimobile\.meituan\.com\/appupdate'
     location: http://reject/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/apimobile\.meituan\.com\/group\/v\d\/recommend\/unity\/recommends'
     location: http://reject/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/p\d\.meituan\.net\/(display|mmc)\/'
     location: http://reject/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/www\.meituan\.com\/api\/v\d\/appstatus\?'
     location: http://reject/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/s3plus\.meituan\.net\/v\d\/mss_\w+\/waimai-alita\/\w+\.zip$'
     location: http://reject/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/s3plus\.meituan\.net\/v\d\/mss_\w+\/brandcpt'
     location: http://reject/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/w\.meituan\.net\/v\d\/mss_\w+\/waimai-mach\/\d+\/\d+\/pt-im-(?:guider|coupon-card-stateful)'
     location: http://reject/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/sqt\.meituan\.com\/s\/gateway\/mweb\/api\/marketingResource\/show'
     location: http://reject/
+    disabled: {{{MT_OFF}}}
   # ---- 美团外卖 ----
   - match: '^https?:\/\/wmapi\.meituan\.com\/api\/v\d+\/(?:loadInfo|openscreen|startpicture)'
     location: http://reject/
+    disabled: {{{WM_OFF}}}
   - match: '^https?:\/\/p\d\.meituan\.net\/cell'
     location: http://reject/
+    disabled: {{{WM_OFF}}}
   # ---- 大众点评 ----
   - match: '^https?:\/\/103\.37\.155\.60\/fetch'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/catdot\.dianping\.com\/broker-service\/hijack'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/mapi\.dianping\.com\/mapi\/operating\/(?:indexopsmodules|loadsplashconfig)'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/mapi\.dianping\.com\/wdrpreload\/userprediction'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/mapi\.dianping\.com\/adshopping'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/p\.meituan\.com\/api\/privacy\/config'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/www\.dpfile\.com\/app\/fecommonservice-lottie\/ugc-write-done\/media'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/www\.dpfile\.com\/picasso\/picasso-qa\/src\/AnswerList\/AnswerList-bundle'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/www\.dpfile\.com\/sc\/indexpromotion'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/catfront\.dianping\.com\/api\/metric\?v=\d&p=rn_gcbu_mrn-joy-poidetail'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/awp-assets\.meituan\.net\/hfe\/fep\/\w+\.json'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/s3plus\.meituan\.net\/ocean-blk-index\/index\/blk_conf'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/ddplus\.meituan\.net\/v\d\/mss_\w+\/(?:mmp|ehc|titansx|ddblue|edfu)\/'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/mars\.meituan\.com\/locate\/v\d\/sdk\/loc'
     location: http://reject/
+    disabled: {{{DP_OFF}}}
   # ---- 广告图片：返回 1px 透明图 ----
   - match: '^https?:\/\/img\.meituan\.net\/(adunion|display|midas)\/.+\.(gif|jpg)\.webp$'
     location: http://reject-img/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/img\.meituan\.net\/groceryimages\/\w+\.gif'
     location: http://reject-img/
+    disabled: {{{XX_OFF}}}
   - match: '^https?:\/\/img\.meituan\.net\/groceryimages\/\w+\.png@220w_220h_1e_1l'
     location: http://reject-img/
+    disabled: {{{XX_OFF}}}
   - match: '^https?:\/\/p\d\.meituan\.net\/movie\/.+?\.jpg\?may_covertWebp'
     location: http://reject-img/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/p\d\.meituan\.net\/travelcube\/(?!1d4a663|52e9bfc|29a6227|412c4ac|6ee35c4|13bf0bf|ab8692e|6858b1d).+@100w_100h'
     location: http://reject-img/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/p\d\.meituan\.net\/(\d+\.\d+\.\d+\/)?wmbanner\/(?!fb51b9d|4e9d3c4).+\.gif'
     location: http://reject-img/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/(s3plus|flowplus)\.meituan\.net\/v\d\/\w+\/linglong\/.+\.(?:gif|jpg|mp4)'
     location: http://reject-img/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/img\.meituan\.net\/bizad\/bizad_brandCpt_\d+\.jpg'
     location: http://reject-img/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/img\.meituan\.net\/goodsawardpic'
     location: http://reject-img/
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/s3plus\.meituan\.net\/v\d\/mss_\w+\/goku\/(?:lottie|lucency)'
     location: http://reject-img/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/p\d\.meituan\.net\/nrpresourcevenus\/\w+\.gif'
     location: http://reject-img/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/p\d\.meituan\.net\/travelcube\/(?!c129a661)\w+\.gif'
     location: http://reject-img/
+    disabled: {{{MT_OFF}}}
   # ---- 返回空 JSON ----
   - match: '^http:\/\/59\.82\.113\.10\/amdc\/mobileDispatch\?appkey=213807&'
     location: http://reject-dict/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/portal-portm\.meituan\.com\/horn_ios'
     location: http://reject-dict/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/mall\.meituan\.com\/api\/c\/homepage\/splash'
     location: http://reject-dict/
+    disabled: {{{XX_OFF}}}
   - match: '^https?:\/\/cdb\.meituan\.com\/marketing\/source\/getPageSlotList'
     location: http://reject-dict/
+    disabled: {{{CDB_OFF}}}
   - match: '^https?:\/\/npay\.meituan\.com\/conch\/flow\/mypage-wallet-info'
     location: http://reject-dict/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/npay\.meituan\.com\/conch\/walletv\d\/wechat-pop-window'
     location: http://reject-dict/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/web\.meituan\.com\/newUser\/returnMoney\/popWindow'
     location: http://reject-dict/
+    disabled: {{{MT_OFF}}}
   - match: '^https?:\/\/web\.meituan\.com\/api\/miniprogram\/my\/(?:novelZone|resources)'
     location: http://reject-dict/
+    disabled: {{{WM_OFF}}}
   # ---- 美团众包：开屏图返回空 200 ----
   - match: '^https?:\/\/peisongapi\.meituan\.com\/client\/getInitiateImage'
     location: http://reject-200/
+    disabled: {{{ZB_OFF}}}
 
 body_rewrites:
   # 微信小程序美团外卖：底部栏只留 首页/神券/我的；对象响应时删一分购入口
   - response_jq:
       match: '^https?:\/\/web\.meituan\.com\/api\/miniprogram\/(tabbar\/all\/query|index\/aggregate)'
       filter: 'if (.data | type) == "array" then .data |= map(select(type == "object" and (.name == "首页" or .name == "神券" or .name == "我的"))) elif (.data | type) == "object" then del(.data.oneCentBuy) else . end'
+      disabled: {{{WM_OFF}}}
   # 美团订单详情：关掉合作方状态位（fmz200 2024-02-22 的旧条目，已加存在性保护，未在现版本验证）
   - response_jq:
       match: '^https?:\/\/ordercenter\.meituan\.com\/ordercenter\/user\/showOrderDetail'
       filter: 'if .data?.partnerData then .data.partnerData.poiStatus = 0 else . end'
+      disabled: {{{MT_OFF}}}
   # 大众点评 Picasso 卡片：把 WedgetCard 改名使其失效
   - response_regex:
       match: '^https?:\/\/ddplus\.meituan\.net\/v\d\/mss_\w+\/picassovc'
       find: 'function WedgetCard'
       replace: 'function WedgetCard0'
+      disabled: {{{DP_OFF}}}
 
 map_locals:
   # 大众点评智能首页 / 微信广告查询：返回空 JSON
@@ -255,15 +401,18 @@ map_locals:
     status_code: 200
     headers: {Content-Type: application/json}
     body: '{}'
+    disabled: {{{DP_OFF}}}
   - match: '^https?:\/\/rms\.meituan\.com\/api\/v\d\/rmsmina\/c\/queryWechatAdvertisement'
     status_code: 200
     headers: {Content-Type: application/json}
     body: '{}'
+    disabled: {{{MT_OFF}}}
   # 小象超市首页领券悬浮红包：返回 code 0（无数据）
   - match: '^https?:\/\/mall\.meituan\.com\/api\/c\/homepage\/bubble\/operate\/info'
     status_code: 200
     headers: {Content-Type: application/json}
     body: '{"code": 0}'
+    disabled: {{{XX_OFF}}}
 
 scriptings:
   # 美团 linglong 图片：按请求头与尺寸判断广告图（见 scripts/meituan.js）
@@ -271,6 +420,7 @@ scriptings:
       name: 美团灵珑图片
       match: '^https?:\/\/p\d\.meituan\.net\/linglong\/'
       script_url: 'https://raw.githubusercontent.com/Yatfay/Egern/main/scripts/meituan.js'
+      disabled: {{{MT_OFF}}}
       body_required: true
       binary_body: true
       timeout: 20
@@ -280,6 +430,7 @@ scriptings:
       name: 大众点评图片
       match: '^https?:\/\/img\.meituan\.net\/dpmobile\/'
       script_url: 'https://raw.githubusercontent.com/Yatfay/Egern/main/scripts/meituan.js'
+      disabled: {{{DP_OFF}}}
       body_required: true
       binary_body: true
       timeout: 20
