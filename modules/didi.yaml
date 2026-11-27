@@ -1,0 +1,266 @@
+name: 滴滴出行去广告
+description: 移除开屏、弹窗、横幅与信息流推广，精简首页、底栏与我的页面；需清除缓存或重装 App 才生效。
+author: 奶思, zirawell, 可莉, 怎么肥事
+homepage: https://github.com/Yatfay/Egern
+icon: https://raw.githubusercontent.com/zirawell/R-Store/main/Res/Icon/App/didi.png
+# 合并来源（按贡献）：
+# - fmz200/wool_scripts@2026-11-11（奶思）：DiDiChuxing.lpx + Scripts/didi/didiAds.js
+#   —— usercenter/me、homepage core、pGetSceneList、ota infoList、pInTripLayout、
+#   common/v5 小程序净化等脚本逻辑（已全部转成 response_jq，无脚本）
+# - zirawell/R-Store@2026-05-09：Rule/QuanX/Adblock/App/D/滴滴出行/rewrite/didi.conf
+#   + Res/Scripts/AntiAd/didi.js —— 18 条 reject 规则、ut 车主页、as 配置、
+#   freight 网关条件拦截、IP 封堵清单（4 个）
+# - 可莉 via QingRex/LoonKissSurge@2025-12-29：Surge/滴滴出行去广告.sgmodule
+#   —— 18 条 response_jq（homepage core、other/fast、usercenter/layout、
+#   dache_homepage_layout、pSFCHomePage、代驾/青桔网关、城际票务、as 开关）
+#   与 Map Local（mget、feeds、slow、dynamic/conf、lion、poi 推荐）
+# - 可莉 via BOBOLAOSHIV587/Rules@2026-01-21：JS/DiDi/DiDi.plugin
+#   —— 23 个 IP-CIDR 封堵、gwp/adtrack 域名拦截、usercenter/layout 黑名单版
+# - 怎么肥事 via ZenmoFeiShi/Qx@2026-06-13：Didichuxing.snippet（最新）
+#   —— usercenter/layout 最终版、getMulti/getInsActivityV2/watson 气泡拦截、
+#   oversea 布局、manhattan 资产页、新增 IP（139.199.244.6/.7）、top_nav 过滤
+# - iab0x00/ProxyRules（转自怎么肥事、可莉）：DiDiClean.sgmodule —— 印证 jq 写法
+# - sve1r/Rules-For-Quantumult-X@2024-10-22：Didi.adblock —— 印证核心 reject 集
+# - githubdulong/Script（QuantumultX/Script.conf，无日期头）：guard 安全横幅、
+#   conf/one、conf/nav/widget、商城网关、开屏图床
+# 无原生 Egern 版本可参考（Functional-Store-Hub、leiyiyan/resource 均无滴滴模块）。
+# 冲突处理（详见 didi.report.md）：
+# - /other/fast：4 源 reject vs 可莉 jq 精确删除——按 fail-closed 取 reject-dict。
+# - /ota/na/yuantu/infoList：Zenmo reject vs 脚本只删顶部横幅——取 jq（更精确）。
+# - /ep/as/toggles：R-Store reject vs 可莉/BOBO jq 关 5 个代驾开关——取 jq。
+# - daijia gateway：3 源 reject vs 可莉 jq 过滤——取 reject-dict（网关响应为广告配置）。
+# - usercenter/layout：keli 白名单 vs Zenmo/BOBO 黑名单——取 Zenmo 最新版（删工具卡，
+#   钱包只留优惠卡券）；homepage core 导航取并集（保留全部行车服务）。
+# - pSFCHomePage：可莉原过滤 $root 捕获位置有误（tab_list 会被清空），已修正为
+#   先捕获再替换，保留 passenger 标签页。
+# - mget/feeds/slow/dynamic/conf：Map Local {} 与 reject-dict 等效，取 Map Local。
+# 放弃的条目：
+# - AND(IP-ASN, 端口, 协议）已转为 Egern and 规则（文档支持 asn/dest_port/protocol）。
+# - 滴滴单车/代驾独立 App（DiDiBike、DiDiDaiJia）不在本模块范围；代驾服务在滴滴
+#   主 App 内，故 daijia.kuaidadi.com 网关在本模块内。
+# - 钱包首页 mapi（隐藏信用额度）、ddpay 两条、manhattan module-is-show：
+#   隐藏功能性金融信息或语义不明，已放弃，详见报告。
+# - api.udache.com/gulfstream 整路径 reject、conf/api/(component|...)、
+#   conf/dynamic（无后缀）、pt-starimg 整 static：过于宽泛，已放弃。
+# - IP 字面量 MITM 主机名：规则层 ip_cidr 无需 MITM，未列入。
+# 仅合成数据验证，未在真机实测；开屏/信息流广告可能来自缓存，需清缓存或重装 App 再测。
+rules:
+  # 广告下发域名（可莉、BOBO、R-Store 三方一致）
+  - domain: {match: gwp.xiaojukeji.com, policy: REJECT}
+  - domain: {match: adtrack.xiaojukeji.com, policy: REJECT}
+  # 广告/追踪服务器 IP（BOBO 23 个 + Zenmo 新增 2 个的并集，/32 单主机）
+  - ip_cidr: {match: 113.46.225.8/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 113.46.225.9/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 116.85.1.0/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 116.85.1.17/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 116.85.1.22/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 116.85.2.15/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 116.85.3.25/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 116.85.3.37/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 120.234.72.27/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 120.241.142.13/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 120.241.143.6/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 120.241.143.11/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 120.241.143.129/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 120.241.143.131/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 123.207.209.39/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 123.207.209.60/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 139.199.240.12/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 139.199.240.15/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 139.199.244.6/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 139.199.244.7/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 157.122.213.3/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 157.255.76.17/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 157.255.76.19/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 162.14.157.2/32, policy: REJECT, no_resolve: true}
+  - ip_cidr: {match: 162.14.157.24/32, policy: REJECT, no_resolve: true}
+  # 遥测/数据通道：目标 ASN + 25641 端口 + TCP 才拦截（可莉、BOBO 一致；and 子条件
+  # 不带 no_resolve，见报告）
+  - and:
+      match:
+        - asn: {match: "AS45090"}
+        - dest_port: {match: "25641"}
+        - protocol: {match: tcp}
+      policy: REJECT
+  - and:
+      match:
+        - asn: {match: "AS55990"}
+        - dest_port: {match: "25641"}
+        - protocol: {match: tcp}
+      policy: REJECT
+  - and:
+      match:
+        - asn: {match: "AS63646"}
+        - dest_port: {match: "25641"}
+        - protocol: {match: tcp}
+      policy: REJECT
+url_rewrites:
+  # 活动下发（R-Store、Zenmo、sve1r、iab0x00 一致）
+  - match: '^https?:\/\/hd\.xiaojukeji\.com\/d'
+    location: 'http://reject-dict/'
+  - match: '^https?:\/\/res\.xiaojukeji\.com\/resapi\/activity\/xpget'
+    location: 'http://reject-dict/'
+  - match: '^https?:\/\/res\.xiaojukeji\.com\/resapi\/activity\/getMulti'
+    location: 'http://reject-dict/'
+  - match: '^https?:\/\/res\.xiaojukeji\.com\/resapi\/activity\/getInsActivityV2'
+    location: 'http://reject-dict/'
+  # 货运网关：只拦截非个人中心接口（R-Store 条件拦截；前瞻断言 ICU 支持）
+  - match: '^https?:\/\/freight\.xiaojukeji\.com\/gateway(?!\?api=freight\.p\.personal\.center)'
+    location: 'http://reject-dict/'
+  # 代驾网关（Zenmo、iab0x00、sve1r 一致 reject；可莉 jq 为候补方案，见报告）
+  - match: '^https?:\/\/daijia\.kuaidadi\.com(?::443)?\/gateway'
+    location: 'http://reject-dict/'
+  # 首页快配（Zenmo、iab0x00、sve1r、R-Store 一致 reject；可莉 7 处 jq 删除因此失效）
+  - match: '^https?:\/\/conf\.diditaxi\.com\.cn\/homepage\/v\d\/other\/fast'
+    location: 'http://reject-dict/'
+  # 底部打车/代驾推荐、导航小组件（githubdulong，单源）
+  - match: '^https?:\/\/conf\.diditaxi\.com\.cn\/one'
+    location: 'http://reject/'
+  - match: '^https?:\/\/conf\.diditaxi\.com\.cn\/nav\/widget'
+    location: 'http://reject/'
+  # 代驾前端配置（R-Store，单源）
+  - match: '^https?:\/\/as\.xiaojukeji\.com\/ep\/as\/conf\?ns=daijia-front&name='
+    location: 'http://reject-dict/'
+  # 车主页弹窗（R-Store，单源）
+  - match: '^https?:\/\/ut\.xiaojukeji\.com\/ut\/kappa\/api\/owner\/index\/dialog'
+    location: 'http://reject/'
+  # 升级/埋点接口（R-Store，单源）
+  - match: '^https?:\/\/omgup\d?\.xiaojukeji\.com\/api'
+    location: 'http://reject-200/'
+  # 骑行星图图片（R-Store，单源；原子组已改写为非捕获组）
+  - match: '^https?:\/\/pt-starimg\.didistatic\.com\/static\/starimg\/node\/.*\.(?:jpg|png|gif)'
+    location: 'http://reject-200/'
+  # 开屏广告图床（githubdulong，单源；图片用 reject-img 而不用源里的 reject）
+  - match: '^https?:\/\/img-ys011\.didistatic\.com\/static'
+    location: 'http://reject-img/'
+  # 隐私弹窗配置（R-Store，单源）
+  - match: '^https?:\/\/api\.udache\.com\/gulfstream\/confucius\/api\/privacy\/app\/popList'
+    location: 'http://reject-dict/'
+  # 安全提示横幅（githubdulong，单源）
+  - match: '^https?:\/\/guard\.sec\.xiaojukeji\.com\/api\/guard\/psg\/v2\/getShieldStatus'
+    location: 'http://reject/'
+  # 商城网关（githubdulong，单源）
+  - match: '^https?:\/\/shop-gw\.chengxinyouxuan\.com\/(?:route|indexConfig|apolloConfig|getShopTuanInfos)'
+    location: 'http://reject/'
+  # 行程中气泡推广（Zenmo，单源）
+  - match: '^https?:\/\/api\.udache\.com\/gulfstream\/watson\/v1\/bubble\/getBubble'
+    location: 'http://reject-dict/'
+body_rewrites:
+  # 首页核心配置：只留行车服务导航、首页/我的底栏，删顶部旅行/车主入口
+  # （导航取三源并集；top_nav 有 has 保护，缺失时不创建空结构）
+  - response_jq:
+      match: '^https?:\/\/conf\.diditaxi\.com\.cn\/homepage\/v\d\/core'
+      filter: '.data.order_cards.nav_list_card.data |= map(select(.nav_id == "dache_anycar" or .nav_id == "carmate" or .nav_id == "driverservice" or .nav_id == "zhandianbashi" or .nav_id == "yuancheng" or .nav_id == "pincheche" or .nav_id == "bike" or .nav_id == "special_ride" or .nav_id == "nav_more_v3")) | .data.disorder_cards.bottom_nav_list.data |= map(select(.id == "v6x_home" or .id == "home_page" or .id == "user_center")) | .data.disorder_cards |= (if has("top_nav_list") then .top_nav_list.data.top_nav_info |= map(select(.name != "旅行" and .name != "车主")) else . end)'
+  # 我的页面：删福利/金融/更多服务/企业服务/安全中心卡片；钱包只留优惠券，
+  # 钱包底部只留省钱套餐/天天神券/出行里程（三源并集）
+  - response_jq:
+      match: '^https?:\/\/common\.diditaxi\.com\.cn\/common\/v\d\/usercenter\/me'
+      filter: '.data.cards |= map(select(.title != "天天领福利" and .title != "金融服务" and .title != "更多服务" and .title != "企业服务" and .title != "安全中心")) | .data.cards |= map(if .tag == "wallet" then (.items |= map(select(.title == "优惠券"))) | (if .card_type == 4 then .bottom_items |= map(select(.title == "省钱套餐" or .title == "天天神券" or .title == "出行里程")) else . end) else . end)'
+  # 我的页面布局（Zenmo 最新版）：排序只留基础信息/订单/钱包；钱包只留优惠卡券；
+  # 删营销/会员/工具/小组件卡片
+  - response_jq:
+      match: '^https?:\/\/common\.diditaxi\.com\.cn\/common\/v[5-9]\/usercenter\/layout'
+      filter: '.data.layout.order |= map(select(. == "center_base_info_card" or . == "center_order_related_card" or . == "center_wallet_finance_card")) | (.data.instances.center_wallet_finance_card.data.view_info |= map(select(.title == "优惠卡券"))) | del(.data.instances.center_marketing_card, .data.instances.center_member_card, .data.instances.center_tool_card, .data.instances.center_widget_list)'
+  # 微信小程序个人中心：只留基础信息/头部/核心功能区（fmz200 脚本转 jq；
+  # 排除 usercenter/layout，避免与上一条互相干扰）
+  - response_jq:
+      match: '^https?:\/\/common\.diditaxi\.com\.cn\/common\/v5(?!\/usercenter\/layout)'
+      filter: '.data.sections |= map(select(.sectionId == "center_v2" or .sectionId == "head_v2" or .sectionId == "core_function"))'
+  # 优惠商城入口：删场景列表里的优惠商城，删 show_data 里的优惠商城场景
+  - response_jq:
+      match: '^https?:\/\/api\.udache\.com\/gulfstream\/pre-sale\/v\d\/other\/pGetSceneList'
+      filter: '.data.scene_list |= map(select(.text != "优惠商城")) | .data.show_data[] |= (if .scene_ids then .scene_ids |= map(select(. != "scene_coupon_mall")) else . end)'
+  # 元图信息流：只删顶部横幅卡片（Zenmo 整路径 reject 为冲突方，见报告）
+  - response_jq:
+      match: '^https?:\/\/conf\.diditaxi\.com\.cn\/ota\/na\/yuantu\/infoList'
+      filter: '.data.disorder_cards.top_banner_card.data |= if .[0].T == "yuentu_top_banner" then .[1:] else . end'
+  # 行程进行页：删推广组件（索引式 del 已放弃，只留按名过滤）
+  - response_jq:
+      match: '^https?:\/\/api\.udache\.com\/gulfstream\/passenger-center\/v2\/other\/pInTripLayout'
+      filter: '.data.order_components |= map(select(.name != "passenger_common_casper"))'
+  # 打车首页布局：删车标协议弹窗与 xp 推广卡（BOBO + Zenmo 各一处，合并）
+  - response_jq:
+      match: '^https?:\/\/api\.udache\.com\/gulfstream\/porsche\/v1\/dache_homepage_layout'
+      filter: 'del(.data.instances.car_icon_01.data.icon_info_new_agreement, .data.instances["xp-card-01"])'
+  # 顺风车首页：只留热门路线与法律信息、只留乘客标签页
+  # （可莉原过滤 $root 捕获在替换后，tab_list 会被清空，已修正为先捕获）
+  - response_jq:
+      match: '^https?:\/\/api\.udache\.com\/gulfstream\/porsche\/v1\/pSFCHomePage'
+      filter: '. as $root | .data |= (if . == null then null else {hot_route_info, legal_info} end) | .data.tab_list = ($root.data.tab_list | map(select(.tab_id == "passenger")))'
+  # 城际票务：只留历史/进行中订单、日历、主卡、历史订单
+  - response_jq:
+      match: '^https?:\/\/api\.udache\.com\/intercity\/ticket\/api\/v1\/core\/getFullPageInfoLayout'
+      filter: '.data.disorder_components |= map(select(.name == "history_order_card" or .name == "inprogress_order_card" or .name == "station_calendar" or .name == "main_card_v2" or .name == "user_history_order"))'
+  # 青桔单车网关：删首页弹窗与实验变体
+  - response_jq:
+      match: '^https?:\/\/htwkop\.xiaojukeji\.com(?::443)?\/gateway'
+      filter: 'delpaths([["data","didi-bike-homepage-popup"],["data","variantInfo"]])'
+  # 应用开关：关 5 个代驾 TCP 相关开关（可莉、BOBO 一致；R-Store 整路径 reject 为冲突方）
+  - response_jq:
+      match: '^https?:\/\/as\.xiaojukeji\.com\/ep\/as\/toggles'
+      filter: '.data |= map(if .name|IN("daijia_journey_new_tcp_switch","daijia_tcp_init","daijia_tcp_msg_encrypt","daijia_tcp_site_info","daijia_tcp_site_report")then.allow=false else. end)'
+  # 资产页：只删横幅（Zenmo 原过滤还删额度/担保模块，已放弃）
+  - response_jq:
+      match: '^https?:\/\/manhattan\.webapp\.xiaojukeji\.com\/zootopia\/api\/my-assets\/get-assets-data'
+      filter: 'del(.data.banner, .data.assetsData.banner)'
+  # 车主页：横幅字段置空（R-Store response-body random_body 的等效写法，单源）
+  - response_jq:
+      match: '^https?:\/\/ut\.xiaojukeji\.com\/ut\/kappa\/api\/owner\/index(\?|$)'
+      filter: '.data.banner_items = []'
+map_locals:
+  # 以下接口返回空 JSON（keli Map Local；R-Store 等 reject-dict，等效）
+  - match: '^https?:\/\/res\.xiaojukeji\.com\/resapi\/activity\/mget'
+    status_code: 200
+    headers: {Content-Type: application/json}
+    body: '{}'
+  - match: '^https?:\/\/ct\.xiaojukeji\.com\/agent\/v\d\/feeds'
+    status_code: 200
+    headers: {Content-Type: application/json}
+    body: '{}'
+  - match: '^https?:\/\/conf\.diditaxi\.com\.cn\/homepage\/v\d\/other\/slow'
+    status_code: 200
+    headers: {Content-Type: application/json}
+    body: '{}'
+  - match: '^https?:\/\/conf\.diditaxi\.com\.cn\/dynamic\/conf'
+    status_code: 200
+    headers: {Content-Type: application/json}
+    body: '{}'
+  - match: '^https?:\/\/lion\.didialift\.com\/broker\/'
+    status_code: 200
+    headers: {Content-Type: application/json}
+    body: '{}'
+  - match: '^https?:\/\/poi\.map\.xiaojukeji\.com\/mapapi\/recommend'
+    status_code: 200
+    headers: {Content-Type: application/json}
+    body: '{}'
+mitm:
+  hostnames:
+    - hd.xiaojukeji.com
+    - res.xiaojukeji.com
+    - ct.xiaojukeji.com
+    - freight.xiaojukeji.com
+    - daijia.kuaidadi.com
+    - conf.diditaxi.com.cn
+    - common.diditaxi.com.cn
+    - api.udache.com
+    - as.xiaojukeji.com
+    - ut.xiaojukeji.com
+    - omgup.xiaojukeji.com
+    - omgup0.xiaojukeji.com
+    - omgup1.xiaojukeji.com
+    - omgup2.xiaojukeji.com
+    - omgup3.xiaojukeji.com
+    - omgup4.xiaojukeji.com
+    - omgup5.xiaojukeji.com
+    - omgup6.xiaojukeji.com
+    - omgup7.xiaojukeji.com
+    - omgup8.xiaojukeji.com
+    - omgup9.xiaojukeji.com
+    - pt-starimg.didistatic.com
+    - img-ys011.didistatic.com
+    - lion.didialift.com
+    - poi.map.xiaojukeji.com
+    - htwkop.xiaojukeji.com
+    - guard.sec.xiaojukeji.com
+    - shop-gw.chengxinyouxuan.com
+    - manhattan.webapp.xiaojukeji.com
