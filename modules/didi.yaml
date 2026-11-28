@@ -44,36 +44,21 @@ icon: https://raw.githubusercontent.com/zirawell/R-Store/main/Res/Icon/App/didi.
 #   conf/dynamic（无后缀）、pt-starimg 整 static：过于宽泛，已放弃。
 # - IP 字面量 MITM 主机名：规则层 ip_cidr 无需 MITM，未列入。
 # 仅合成数据验证，未在真机实测；开屏/信息流广告可能来自缓存，需清缓存或重装 App 再测。
+# 2026-11-28 修复“目的地搜索断网”：删除全部 25 条 ip_cidr 与
+# poi.map recommend 空返回（详见 didi.report.md 修复记录）；其余条目未动。
 rules:
   # 广告下发域名（可莉、BOBO、R-Store 三方一致）
   - domain: {match: gwp.xiaojukeji.com, policy: REJECT}
   - domain: {match: adtrack.xiaojukeji.com, policy: REJECT}
-  # 广告/追踪服务器 IP（BOBO 23 个 + Zenmo 新增 2 个的并集，/32 单主机）
-  - ip_cidr: {match: 113.46.225.8/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 113.46.225.9/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 116.85.1.0/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 116.85.1.17/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 116.85.1.22/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 116.85.2.15/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 116.85.3.25/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 116.85.3.37/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 120.234.72.27/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 120.241.142.13/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 120.241.143.6/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 120.241.143.11/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 120.241.143.129/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 120.241.143.131/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 123.207.209.39/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 123.207.209.60/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 139.199.240.12/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 139.199.240.15/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 139.199.244.6/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 139.199.244.7/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 157.122.213.3/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 157.255.76.17/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 157.255.76.19/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 162.14.157.2/32, policy: REJECT, no_resolve: true}
-  - ip_cidr: {match: 162.14.157.24/32, policy: REJECT, no_resolve: true}
+  # 2026-11-28 已删除全部 25 条 ip_cidr /32（BOBO 23 个 + Zenmo 新增 2 个）：
+  # 实测 DNS 证明这些 IP 与滴滴核心接口共用同一共享网关 IP 池
+  # （123.207.209.0/24 等，TTL 60 秒轮换）：adtrack.xiaojukeji.com 当时
+  # 解析到的 3 个 IP 与 api.udache.com / conf.diditaxi.com.cn 完全相同，
+  # 被封的 123.207.209.39 / .60 正是 gwp.xiaojukeji.com 的当前解析结果；
+  # 轮换到被封 IP 时搜索接口的 TCP 连接被直接拒绝，表现为“断网”。
+  # 原始出处只是 2024 年群友分享的裸 IP（didiAds.js 头注“群友EDDA分享”，
+  # 无域名、无用途说明），无法证明与广告无关；gwp/adtrack 两个域名规则
+  # 已按名拦截广告域名，保留。
   # 遥测/数据通道：目标 ASN + 25641 端口 + TCP 才拦截（可莉、BOBO 一致；and 子条件
   # 不带 no_resolve，见报告）
   - and:
@@ -229,10 +214,10 @@ map_locals:
     status_code: 200
     headers: {Content-Type: application/json}
     body: '{}'
-  - match: '^https?:\/\/poi\.map\.xiaojukeji\.com\/mapapi\/recommend'
-    status_code: 200
-    headers: {Content-Type: application/json}
-    body: '{}'
+  # 2026-11-28 已删除 poi.map.xiaojukeji.com/mapapi/recommend 的空返回：
+  # 单源（可莉 2025-12-29），该接口返回搜索页的推荐地点，属于搜索内容
+  # 而非已证实的广告；置空 {} 会导致搜索页无结果或报网络异常。
+  # 其 MITM 主机名亦同步移除（模块内已无条目触及该域名）。
 mitm:
   hostnames:
     - hd.xiaojukeji.com
@@ -259,7 +244,6 @@ mitm:
     - pt-starimg.didistatic.com
     - img-ys011.didistatic.com
     - lion.didialift.com
-    - poi.map.xiaojukeji.com
     - htwkop.xiaojukeji.com
     - guard.sec.xiaojukeji.com
     - shop-gw.chengxinyouxuan.com

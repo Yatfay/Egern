@@ -32,8 +32,8 @@
 # - WM_OFF  关闭美团外卖去广告
 # - DP_OFF  关闭大众点评去广告（总开关；原 DP_SCRIPT 脚本开关已于 2026-11-27 并入此开关）
 # - XX_OFF  关闭小象超市去广告
-# - CDB_OFF 关闭美团充电宝去广告
 # - ZB_OFF  关闭美团众包去广告
+# （2026-11-28：CDB_OFF 已删除，见下方“2026-11-28 修复”——充电宝不再有任何拦截条目）
 # 机制：每个条目带 disabled: {{{KEY}}}；Egern 在模块解析时做参数替换
 # （configuration-modules.md “参数替换”：每个 {{{参数名}}} 占位符都会被替换；
 # 布尔字段不加引号，文档示例即 `enabled: {{{FLAG}}}`），替换后 disabled 解析为真布尔值。
@@ -52,8 +52,19 @@
 # 注意：mitm hostnames 是模块级配置，不随开关变化；关闭某 App 只是让该 App 的
 # 条目全部失效（不再改写/拦截），MITM 拦截本身仍会放行流量（原样通过，不修改）。
 # 2026-11-27：DP_SCRIPT 并入 DP_OFF，脚本 meituan.js 同步删除 DP_SCRIPT 判断。
+# 2026-11-28 修复（用户真机反馈：装模块后美团 App 扫码租不到充电宝）：
+# 删除 url_rewrites 里唯一一条充电宝条目
+# `cdb.meituan.com/marketing/source/getPageSlotList` → http://reject-dict/。
+# 扫码后打开的是 cdb.meituan.com 的租借页，该页按“坑位（slot）”组装界面
+# （机柜信息、价格、借充电宝按钮等），需要该接口的真实返回来渲染；返回空 {}
+# 会让页面空白或报错，扫码流程走不下去。上游 fmz200 MeituanPowerBank.lpx 与
+# R-Store meituancdb.conf 都有同一条（均为微信小程序场景），但用户真机结果为准，
+# 核心功能 fail-open：该条目删除，不再对充电宝页做任何拦截。
+# CDB_OFF 开关因此成了空开关，一并删除（compat_arguments 与 env_schema）。
+# mitm 里的 cdb.meituan.com 保留：无条目匹配时流量原样通过；若重测后仍扫不出，
+# 下一步再怀疑该域名的证书 pinning，届时删 hostname。
 name: 美团系去广告
-description: 去除美团、美团外卖、大众点评、小象超市、美团充电宝与美团众包的开屏、信息流与推广广告；某些 App 需清除缓存或重装才生效。各 App 去广告可单独开关，默认全开。
+description: 去除美团、美团外卖、大众点评、小象超市与美团众包的开屏、信息流与推广广告；某些 App 需清除缓存或重装才生效。各 App 去广告可单独开关，默认全开。
 author: 奶思, zirawell
 homepage: https://github.com/Yatfay/Egern
 icon: https://raw.githubusercontent.com/zirawell/R-Store/main/Res/Icon/App/meituan.png
@@ -65,7 +76,6 @@ compat_arguments:
   WM_OFF: false
   DP_OFF: false
   XX_OFF: false
-  CDB_OFF: false
   ZB_OFF: false
 
 env_schema:
@@ -89,12 +99,6 @@ env_schema:
     default_value: "false"
   XX_OFF:
     name: "关闭小象超市去广告"
-    options:
-      - "true"
-      - "false"
-    default_value: "false"
-  CDB_OFF:
-    name: "关闭美团充电宝去广告"
     options:
       - "true"
       - "false"
@@ -349,9 +353,6 @@ url_rewrites:
   - match: '^https?:\/\/mall\.meituan\.com\/api\/c\/homepage\/splash'
     location: http://reject-dict/
     disabled: {{{XX_OFF}}}
-  - match: '^https?:\/\/cdb\.meituan\.com\/marketing\/source\/getPageSlotList'
-    location: http://reject-dict/
-    disabled: {{{CDB_OFF}}}
   - match: '^https?:\/\/npay\.meituan\.com\/conch\/flow\/mypage-wallet-info'
     location: http://reject-dict/
     disabled: {{{MT_OFF}}}
